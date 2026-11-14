@@ -33,6 +33,19 @@ No se postula solo: **la decisión de mandar el CV siempre es mía.** Postularse
 
 **El catálogo solo agrupa nombres que significan lo mismo** (*Postgres* = *PostgreSQL*). Herramientas parecidas pero distintas van separadas (*Maven ≠ Gradle*), para que el radar no diga que sé algo que no usé.
 
+## Seguridad
+
+| Riesgo | Cómo se cubre |
+|---|---|
+| Que alguien use el token de Telegram o la clave del Gmail | Viven solo en *GitHub Secrets* (cifrados, no aparecen en los registros). Un pull request desde otro repo no tiene acceso a los secretos. |
+| Mails falsos que imitan a LinkedIn con links a sitios truchos | Solo se aceptan links cuyo **dominio real** es el del sitio y con `https` (test incluido con links disfrazados). |
+| Botones o comandos de otra persona | Solo se procesan los que vienen de tu `chat_id`. |
+| Texto malicioso en un aviso | Todo se escapa antes de mandarlo a Telegram; los avisos nunca se ejecutan, solo se leen como texto. |
+| Que se vean tus postulaciones | Archivo cifrado; los registros públicos solo muestran cantidades. |
+| Acceso a tu buzón | Gmail **separado**, solo para alertas, abierto en **solo lectura**. |
+
+El radar corre en los servidores de GitHub: no se conecta nunca a tu computadora.
+
 ## Estructura
 
 ```

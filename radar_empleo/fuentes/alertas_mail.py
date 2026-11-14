@@ -19,6 +19,7 @@ import email.policy
 import html
 import imaplib
 import re
+import urllib.parse
 from dataclasses import dataclass
 from datetime import date, timedelta
 from email.message import EmailMessage
@@ -36,15 +37,28 @@ class Sitio:
     nombre: str
     remitente: str            # parte del dominio del remitente
     patron_aviso: re.Pattern  # link que identifica un aviso; el grupo 1 es el id
+    dominios: tuple[str, ...] = ()  # el link TIENE que ir a uno de estos dominios (seguridad)
 
 
 SITIOS = [
-    Sitio("LinkedIn", "linkedin.com", re.compile(r"linkedin\.com/(?:comm/)?jobs/view/(\d+)")),
-    Sitio("Computrabajo", "computrabajo", re.compile(r"computrabajo\.com[^\s\"'<>]*/ofertas-de-trabajo/[^\s\"'<>]*?([0-9A-F]{16,})", re.IGNORECASE)),
-    Sitio("Bumeran", "bumeran", re.compile(r"bumeran\.com\.ar/empleos/[^\s\"'<>]*?-(\d{6,})\.html")),
-    Sitio("ZonaJobs", "zonajobs", re.compile(r"zonajobs\.com\.ar/empleos/[^\s\"'<>]*?-(\d{6,})\.html")),
-    Sitio("Indeed", "indeed", re.compile(r"indeed\.com[^\s\"'<>]*?[?&](?:jk|vjk)=([0-9a-f]{12,})")),
+    Sitio("LinkedIn", "linkedin.com", re.compile(r"linkedin\.com/(?:comm/)?jobs/view/(\d+)"), ("linkedin.com",)),
+    Sitio("Computrabajo", "computrabajo", re.compile(r"computrabajo\.com[^\s\"'<>]*/ofertas-de-trabajo/[^\s\"'<>]*?([0-9A-F]{16,})", re.IGNORECASE),
+          ("computrabajo.com", "computrabajo.com.ar")),
+    Sitio("Bumeran", "bumeran", re.compile(r"bumeran\.com\.ar/empleos/[^\s\"'<>]*?-(\d{6,})\.html"), ("bumeran.com.ar",)),
+    Sitio("ZonaJobs", "zonajobs", re.compile(r"zonajobs\.com\.ar/empleos/[^\s\"'<>]*?-(\d{6,})\.html"), ("zonajobs.com.ar",)),
+    Sitio("Indeed", "indeed", re.compile(r"indeed\.com[^\s\"'<>]*?[?&](?:jk|vjk)=([0-9a-f]{12,})"), ("indeed.com", "indeed.com.ar")),
 ]
+
+
+def va_al_sitio(url: str, sitio: Sitio) -> bool:
+    """
+    SEGURIDAD: el link tiene que llevar de verdad al sitio, mirando el dominio real.
+    Sin esto, un mail falso con "sitio-trucho.com/?x=linkedin.com/jobs/view/1" pasaría
+    como oferta de LinkedIn y te llegaría a Telegram un link a una página de phishing.
+    """
+    partes = urllib.parse.urlsplit(url)
+    host = (partes.hostname or "").lower()
+    return partes.scheme == "https" and any(host == d or host.endswith("." + d) for d in sitio.dominios)
 
 ENLACE = re.compile(r"<a\s[^>]*href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a>", re.IGNORECASE | re.DOTALL)
 TEXTOS_QUE_NO_SON_TITULOS = {"ver empleo", "ver oferta", "postularme", "solicitar", "apply", "view job", "ver mas", "ver todas"}
@@ -81,7 +95,7 @@ def ofertas_del_html(contenido: str, sitio: Sitio, fecha: date | None = None) ->
     for url, texto in ENLACE.findall(contenido):
         url = html.unescape(url)
         coincidencia = sitio.patron_aviso.search(url)
-        if not coincidencia:
+        if not coincidencia or not va_al_sitio(url, sitio):
             continue
         titulo = html_a_texto(texto).split("\n")[0].strip()
         id_aviso = f"{sitio.nombre.lower()}:{coincidencia.group(1)}"

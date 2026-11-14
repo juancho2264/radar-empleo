@@ -85,6 +85,11 @@ def e(texto: str) -> str:
     return html.escape(texto, quote=False)
 
 
+def link(url: str, texto: str) -> str:
+    """Link seguro: la dirección escapada CON comillas (si no, un " en la URL podría inyectar formato)."""
+    return f'<a href="{html.escape(url, quote=True)}">{e(texto)}</a>'
+
+
 def mensaje_oferta(ev: Evaluacion) -> str:
     o = ev.oferta
     color = "🟢" if ev.porcentaje >= 75 else "🟡"
@@ -122,7 +127,7 @@ def mensaje_alertas(evaluaciones: list[Evaluacion]) -> str:
               "Usá los botones con el número de cada una.</i>", ""]
     for n, ev in enumerate(evaluaciones, 1):  # numeradas: los botones ✅ 1 / 🚫 1 se refieren a estos números
         o = ev.oferta
-        lineas.append(f'🔵 <b>{n}.</b> {ev.porcentaje}% · <a href="{e(o.url)}">{e(o.titulo)}</a> · {e(o.fuente.replace(" (alerta)", ""))}')
+        lineas.append(f'🔵 <b>{n}.</b> {ev.porcentaje}% · {link(o.url, o.titulo)} · {e(o.fuente.replace(" (alerta)", ""))}')
         if ev.tiene:
             lineas.append(f"    ✅ {e(', '.join(ev.tiene))}" + (f" · ❌ {e(', '.join(ev.falta))}" if ev.falta else ""))
     return "\n".join(lineas)

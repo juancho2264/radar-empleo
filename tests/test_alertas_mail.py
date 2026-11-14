@@ -79,3 +79,14 @@ def test_las_alertas_llegan_juntas_en_un_mensaje_con_links(monkeypatch, capsys, 
     assert "📬 <b>1 oferta de tus alertas para revisar</b>" in salida
     assert '<a href="https://www.linkedin.com/comm/jobs/view/3912345678/">Desarrollador Java Junior</a>' in salida
     assert "Senior .NET" not in salida
+
+
+def test_links_disfrazados_no_pasan():
+    """Un mail falso con links que mencionan LinkedIn pero llevan a otro sitio: no tiene que pasar ninguno."""
+    trampa = """
+      <a href="https://sitio-trucho.com/?x=https://www.linkedin.com/comm/jobs/view/111111">Desarrollador Java Junior</a>
+      <a href="https://linkedin.com.sitio-trucho.com/comm/jobs/view/222222">Desarrollador React Junior</a>
+      <a href="http://www.linkedin.com/comm/jobs/view/333333">Desarrollador Python Junior</a>
+      <a href="https://www.linkedin.com/comm/jobs/view/444444">Desarrollador Java Trainee</a>
+    """
+    assert [o.id for o in ofertas_del_html(trampa, LINKEDIN)] == ["linkedin:444444"]   # solo el link real y seguro

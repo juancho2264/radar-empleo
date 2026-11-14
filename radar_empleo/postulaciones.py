@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import html
 import json
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -184,7 +185,7 @@ class Postulaciones:
         for oferta, est in filas[:25]:
             icono = iconos.get(est.get("seguimiento"), "📨")
             empresa = f" · {_e(oferta['empresa'])}" if oferta.get("empresa") else ""
-            lineas.append(f'{icono} {est["fecha"][8:10]}/{est["fecha"][5:7]} · <a href="{_e(oferta["url"])}">{_e(oferta["titulo"])}</a>{empresa}')
+            lineas.append(f'{icono} {est["fecha"][8:10]}/{est["fecha"][5:7]} · <a href="{html.escape(oferta["url"], quote=True)}">{_e(oferta["titulo"])}</a>{empresa}')
         return "\n".join(lineas)
 
 
@@ -206,5 +207,4 @@ def mensaje_de_seguimiento(oferta: dict) -> str:
 
 
 def _e(texto: str) -> str:
-    import html
     return html.escape(texto or "", quote=False)
