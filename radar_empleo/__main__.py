@@ -12,6 +12,8 @@ import argparse
 import json
 import os
 import sys
+import urllib.error
+import urllib.parse
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -102,15 +104,21 @@ def _categoria(motivo: str) -> str:
 
 def _muestra() -> int:
     """Muestra las claves y un ejemplo de cada fuente. Sirve para ver si una API cambió su formato."""
+    expand = urllib.parse.quote('["company"]')
     pruebas = {
-        "Get on Board": getonboard.URL + '?query=java&per_page=1&expand=["company"]',
-        "Remotive": remotive.URL.replace("limit=150", "limit=1"),
+        "Get on Board (solo query)": getonboard.URL + "?query=java",
+        "Get on Board (per_page)": getonboard.URL + "?query=java&per_page=2",
+        "Get on Board (expand)": getonboard.URL + f"?query=java&per_page=2&expand={expand}",
+        "Remotive": remotive.URL,
     }
     for nombre, url in pruebas.items():
         print(f"===== {nombre} =====")
         try:
             datos = obtener_json(url)
             print(json.dumps(_recortar(datos), indent=2, ensure_ascii=False)[:3000])
+        except urllib.error.HTTPError as error:
+            # El cuerpo del error suele explicar qué parámetro no le gustó
+            print(f"ERROR HTTP {error.code}: {error.read().decode('utf-8', 'replace')[:500]}")
         except Exception as error:  # noqa: BLE001
             print(f"ERROR: {type(error).__name__}: {error}")
     return 0
