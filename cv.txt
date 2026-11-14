@@ -26,7 +26,7 @@ WhatsApp.
 HABILIDADES TÉCNICAS
 Backend: Java, Spring Boot, Spring Data JPA, Spring Security, JWT, APIs REST, Python
 Frontend: JavaScript, React, HTML, CSS, diseño responsive y accesible
-Bases de datos y testing: SQL, PostgreSQL, H2 · JUnit 5, tests de integración, Playwright
+Bases de datos y testing: SQL, H2 · JUnit 5, tests de integración, Playwright
 Cloud y herramientas: Google Cloud, Docker, GitHub Actions, Git, GitHub, Maven, Render
 EXPERIENCIA LABORAL
 Control y Apoyo en Producción · Green Box                                                                           2024 – 2025

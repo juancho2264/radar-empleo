@@ -46,7 +46,7 @@ radar_empleo/
 ├── telegram.py          mensajes y envío
 ├── estado.py            memoria de ofertas ya revisadas
 └── __main__.py          punto de entrada
-tests/                   28 tests con pytest
+tests/                   29 tests con pytest
 .github/workflows/       radar.yml (corre 2 veces por día) · tests.yml
 ```
 
