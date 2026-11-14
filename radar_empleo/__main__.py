@@ -107,7 +107,6 @@ def _muestra() -> int:
     expand = urllib.parse.quote('["company"]')
     pruebas = {
         "Get on Board (oferta de ejemplo)": getonboard.URL + f"?query=java&per_page=1&expand={expand}",
-        "Get on Board (niveles)": "https://www.getonbrd.com/api/v0/seniorities",
         "Remotive (oferta de ejemplo)": remotive.URL,
     }
     for nombre, url in pruebas.items():
@@ -120,6 +119,14 @@ def _muestra() -> int:
             print(f"ERROR HTTP {error.code}: {error.read().decode('utf-8', 'replace')[:500]}")
         except Exception as error:  # noqa: BLE001
             print(f"ERROR: {type(error).__name__}: {error}")
+
+    print("===== Get on Board (niveles completos) =====")
+    try:
+        niveles = obtener_json("https://www.getonbrd.com/api/v0/seniorities").get("data", [])
+        for n in sorted(niveles, key=lambda n: int(n["id"])):
+            print(f"  {n['id']} = {n['attributes'].get('name')} ({n['attributes'].get('locale_key')})")
+    except Exception as error:  # noqa: BLE001
+        print(f"ERROR: {type(error).__name__}: {error}")
 
     # Corrida real (sin Telegram): solo cantidades, nada de detalle (los registros son públicos)
     print("===== Corrida real sin Telegram =====")
