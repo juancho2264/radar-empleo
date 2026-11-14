@@ -26,9 +26,10 @@ No se postula solo: **la decisión de mandar el CV siempre es mía.** Postularse
 | **1. Busca** | Consulta fuentes con acceso público para programas: [Get on Board](https://www.getonbrd.com) (empleo tech de Latinoamérica) y [Remotive](https://remotive.com) (remoto internacional). Si una fuente falla, las demás siguen. |
 | **2. Anti-estafas** | Señales **graves** (descartan solas): te piden plata, datos bancarios o DNI, o prometen ganancias fáciles. Señales **medias** (dos o más descartan): contacto solo por WhatsApp o Telegram, mail de Gmail, empresa anónima, descripción vaga, aviso de hace más de 45 días. |
 | **3. Nivel** | Descarta lo que pide semi senior o senior. Lee el título y, en la descripción, los años de experiencia pedidos ("3 años" → semi senior). No se confunde con frases como *"vas a trabajar con seniors"*. |
-| **4. Ubicación** | Descarta remotos restringidos a otros países ("USA only") y presenciales fuera de mi zona. |
-| **5. Compatibilidad** | Detecta las tecnologías del aviso con un catálogo de sinónimos y calcula el % que tengo. Las del título pesan el doble. |
-| **6. Sugerencias** | Qué proyecto poner primero, en qué orden listar las habilidades y cómo escribir cada tecnología como la escribe el aviso. **Nunca agrega habilidades que no tengo.** |
+| **4. Ubicación** | Descarta remotos restringidos a otros países ("USA only") y presenciales fuera de mi zona. Empresas de cualquier país que contratan desde Argentina o LATAM entran. |
+| **5. Idioma** | Con inglés básico (`ingles: basico` en el perfil), descarta avisos escritos en inglés o que piden inglés intermedio, avanzado o bilingüe. |
+| **6. Compatibilidad** | Detecta las tecnologías del aviso con un catálogo de sinónimos y calcula el % que tengo. Las del título pesan el doble. |
+| **7. Sugerencias** | Qué proyecto poner primero, en qué orden listar las habilidades y cómo escribir cada tecnología como la escribe el aviso. **Nunca agrega habilidades que no tengo.** |
 
 **El catálogo solo agrupa nombres que significan lo mismo** (*Postgres* = *PostgreSQL*). Herramientas parecidas pero distintas van separadas (*Maven ≠ Gradle*), para que el radar no diga que sé algo que no usé.
 
@@ -46,7 +47,7 @@ radar_empleo/
 ├── telegram.py          mensajes y envío
 ├── estado.py            memoria de ofertas ya revisadas
 └── __main__.py          punto de entrada
-tests/                   29 tests con pytest
+tests/                   36 tests con pytest
 .github/workflows/       radar.yml (corre 2 veces por día) · tests.yml
 ```
 

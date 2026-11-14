@@ -38,6 +38,7 @@ class Perfil:
     proyectos: dict[str, set[str]]
     maximo_por_aviso: int = 5
     cv_texto: str = ""
+    ingles: str = "basico"
 
     @classmethod
     def desde_yaml(cls, ruta: str | Path) -> "Perfil":
@@ -54,6 +55,7 @@ class Perfil:
             proyectos={nombre: {t.lower() for t in techs} for nombre, techs in datos.get("proyectos", {}).items()},
             maximo_por_aviso=int(datos.get("maximo_por_aviso", 5)),
             cv_texto=cv.read_text(encoding="utf-8") if cv and cv.exists() else "",
+            ingles=str(datos.get("ingles", "basico")).lower(),
         )
 
 

@@ -131,3 +131,35 @@ def test_herramientas_parecidas_no_se_mezclan():
 
 def test_simbolos_en_nombres():
     assert {"c#", ".net", "node"} <= tecnologias_en("C#, ASP.NET y Node.js")
+
+
+# ---------- Idioma ----------
+
+@pytest.mark.parametrize("descripcion", [
+    "Java y Spring Boot. Inglés intermedio excluyente.",
+    "Java y Spring Boot. Nivel de inglés: avanzado.",
+    "Java y Spring Boot. Buscamos un perfil bilingüe.",
+    "Java y Spring Boot. Excelente nivel de inglés: B2 o superior.",
+])
+def test_con_ingles_basico_descarta_si_piden_mas(perfil, descripcion):
+    ev = evaluar(oferta("Desarrollador Java Junior", descripcion), perfil, HOY)
+    assert ev.descartada_por == "Pide inglés intermedio o más"
+
+
+def test_ingles_basico_no_descarta(perfil):
+    ev = evaluar(oferta("Desarrollador Java Junior", "Java, Spring Boot y SQL. Inglés básico."), perfil, HOY)
+    assert ev.sirve, ev.descartada_por
+
+
+def test_aviso_en_ingles_se_descarta(perfil):
+    texto = ("We are looking for a junior Java developer to join our team. You will work with Spring Boot "
+             "and SQL, and you will collaborate with our engineers on the experience of our users. ")
+    ev = evaluar(oferta("Junior Java Developer", texto, ubicacion="LATAM"), perfil, HOY)
+    assert ev.descartada_por == "Aviso en inglés"
+
+
+def test_si_el_perfil_sabe_ingles_no_descarta(perfil):
+    from dataclasses import replace
+    avanzado = replace(perfil, ingles="avanzado")
+    ev = evaluar(oferta("Desarrollador Java Junior", "Java y Spring Boot. Inglés avanzado."), avanzado, HOY)
+    assert ev.sirve, ev.descartada_por

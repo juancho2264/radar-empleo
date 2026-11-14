@@ -97,6 +97,8 @@ def _categoria(motivo: str) -> str:
         return "por nivel"
     if motivo.startswith(("Solo para", "Presencial")):
         return "por ubicación"
+    if motivo.startswith(("Aviso en inglés", "Pide inglés")):
+        return "por inglés"
     if motivo.startswith("Menciona"):
         return "por palabras excluidas"
     return "por baja compatibilidad"

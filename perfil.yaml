@@ -52,3 +52,7 @@ maximo_por_aviso: 5
 
 # Texto de tu CV actual (para saber cómo escribís cada tecnología)
 cv: cv.txt
+
+# Tu nivel de inglés: basico, intermedio o avanzado.
+# Con "basico" se descartan las ofertas escritas en inglés o que piden inglés intermedio o más.
+ingles: basico

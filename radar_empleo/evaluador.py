@@ -18,6 +18,14 @@ from .modelos import Evaluacion, Oferta, Perfil
 # Señales de que la oferta es solo para otra región (típico en avisos remotos internacionales)
 SOLO_OTRA_REGION = ["us only", "usa only", "u.s. only", "united states only", "us citizens", "eu only",
                     "europe only", "uk only", "canada only", "must be located in the us", "must reside in"]
+# Frases que indican que piden inglés de nivel intermedio o más (normalizadas: sin tildes)
+PIDE_INGLES = re.compile(
+    r"ingles[\s:,-]+(?:\w+[\s:,-]+){0,2}(?:intermedio|avanzado|fluido|conversacional|excluyente|b2|c1|c2)"
+    r"|(?:intermedio|avanzado|fluido)[\s:,-]+(?:\w+[\s:,-]+){0,2}ingles"
+    r"|bilingue"
+    r"|english[\s:,-]+(?:\w+[\s:,-]+){0,2}(?:required|fluent|fluency|advanced|intermediate|b2|c1)"
+    r"|(?:fluent|advanced|intermediate|proficient)[\s:,-]+(?:\w+[\s:,-]+){0,2}english"
+)
 PALABRAS_EN_INGLES = {"the", "and", "with", "you", "will", "our", "for", "experience", "team", "we", "are", "your"}
 
 
@@ -50,8 +58,23 @@ def _motivo_de_descarte(ev: Evaluacion, perfil: Perfil) -> str:
     if region:
         return region
 
+    idioma = _idioma(ev.oferta, perfil)
+    if idioma:
+        return idioma
+
     if ev.porcentaje < perfil.compatibilidad_minima:
         return f"Compatibilidad baja ({ev.porcentaje}%)"
+    return ""
+
+
+def _idioma(oferta: Oferta, perfil: Perfil) -> str:
+    """Con inglés básico, se descartan avisos en inglés o que piden inglés intermedio o más."""
+    if perfil.ingles != "basico":
+        return ""
+    if esta_en_ingles(oferta):
+        return "Aviso en inglés"
+    if PIDE_INGLES.search(normalizar(f"{oferta.titulo} {oferta.descripcion}")):
+        return "Pide inglés intermedio o más"
     return ""
 
 
