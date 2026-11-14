@@ -106,10 +106,9 @@ def _muestra() -> int:
     """Muestra las claves y un ejemplo de cada fuente. Sirve para ver si una API cambió su formato."""
     expand = urllib.parse.quote('["company"]')
     pruebas = {
-        "Get on Board (solo query)": getonboard.URL + "?query=java",
-        "Get on Board (per_page)": getonboard.URL + "?query=java&per_page=2",
-        "Get on Board (expand)": getonboard.URL + f"?query=java&per_page=2&expand={expand}",
-        "Remotive": remotive.URL,
+        "Get on Board (oferta de ejemplo)": getonboard.URL + f"?query=java&per_page=1&expand={expand}",
+        "Get on Board (niveles)": "https://www.getonbrd.com/api/v0/seniorities",
+        "Remotive (oferta de ejemplo)": remotive.URL,
     }
     for nombre, url in pruebas.items():
         print(f"===== {nombre} =====")
@@ -121,6 +120,17 @@ def _muestra() -> int:
             print(f"ERROR HTTP {error.code}: {error.read().decode('utf-8', 'replace')[:500]}")
         except Exception as error:  # noqa: BLE001
             print(f"ERROR: {type(error).__name__}: {error}")
+
+    # Corrida real (sin Telegram): solo cantidades, nada de detalle (los registros son públicos)
+    print("===== Corrida real sin Telegram =====")
+    perfil = Perfil.desde_yaml(RAIZ / "perfil.yaml")
+    ofertas, errores = _buscar_todas()
+    evaluaciones = [evaluar(o, perfil) for o in ofertas]
+    por_fuente = Counter(o.fuente for o in ofertas)
+    print(f"Ofertas por fuente: {dict(por_fuente)} · errores: {errores}")
+    print(f"Te sirven: {sum(ev.sirve for ev in evaluaciones)}")
+    print(f"Descartes: {dict(Counter(_categoria(ev.descartada_por) for ev in evaluaciones if not ev.sirve))}")
+    print(f"Niveles detectados: {dict(Counter(ev.nivel for ev in evaluaciones))}")
     return 0
 
 
