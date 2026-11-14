@@ -85,7 +85,8 @@ def _buscar_todas() -> tuple[list[Oferta], list[str]]:
             for oferta in buscar():
                 ofertas.setdefault(oferta.id, oferta)
         except Exception as error:  # noqa: BLE001 — queremos seguir con las demás fuentes
-            errores.append(f"No pude consultar {nombre}: {type(error).__name__}")
+            codigo = f" {error.code}" if hasattr(error, "code") else ""
+            errores.append(f"No pude consultar {nombre}: {type(error).__name__}{codigo}. Reintento en el próximo aviso.")
     return list(ofertas.values()), errores
 
 

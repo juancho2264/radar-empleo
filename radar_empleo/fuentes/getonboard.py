@@ -9,6 +9,7 @@ no se rompe entera (a lo sumo, ese dato queda vacío).
 from __future__ import annotations
 
 import json
+import time
 import urllib.parse
 from datetime import datetime, timezone
 
@@ -17,7 +18,9 @@ from .base import html_a_texto, obtener_json
 
 NOMBRE = "Get on Board"
 URL = "https://www.getonbrd.com/api/v0/search/jobs"
-BUSQUEDAS = ["java", "spring", "react", "javascript", "python", "junior", "trainee"]
+# Pocas búsquedas y con pausa entre ellas: es una API pública y gratuita, no hay que abusar
+BUSQUEDAS = ["java", "react", "javascript", "python", "junior", "trainee"]
+PAUSA_ENTRE_BUSQUEDAS = 3  # segundos
 
 # Escala oficial de niveles (GET /api/v0/seniorities): 1 Sin experiencia · 2 Junior · 3 Semi Senior · 4 Senior · 5 Expert
 NIVELES = {1: "trainee", 2: "junior", 3: "semi senior", 4: "senior", 5: "senior"}
@@ -25,7 +28,9 @@ NIVELES = {1: "trainee", 2: "junior", 3: "semi senior", 4: "senior", 5: "senior"
 
 def buscar(busquedas: list[str] | None = None) -> list[Oferta]:
     ofertas: dict[str, Oferta] = {}
-    for termino in busquedas or BUSQUEDAS:
+    for i, termino in enumerate(busquedas or BUSQUEDAS):
+        if i:
+            time.sleep(PAUSA_ENTRE_BUSQUEDAS)
         parametros = urllib.parse.urlencode({"query": termino, "per_page": 50, "expand": json.dumps(["company"])})
         datos = obtener_json(f"{URL}?{parametros}")
         for item in datos.get("data", []):

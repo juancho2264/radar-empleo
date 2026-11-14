@@ -123,3 +123,44 @@ def test_corrida_completa_simulada(monkeypatch, capsys, tmp_path):
     assert "[Ver oferta ↗] https://www.getonbrd.com/jobs/" in salida
     assert "Revisé 1 ofertas nuevas: <b>1 te sirven</b>" in salida
     assert "No pude consultar Remotive: TimeoutError" in salida   # una fuente caída no frena a las demás
+
+
+def test_reintenta_si_el_sitio_frena(monkeypatch):
+    """Un 429 (demasiadas consultas) se reintenta; si después responde bien, no hay error."""
+    import io
+    import urllib.error
+    from radar_empleo.fuentes import base
+
+    respuestas = [urllib.error.HTTPError("u", 429, "Too Many Requests", {}, None), io.BytesIO(b'{"ok": true}')]
+
+    class Respuesta:
+        def __init__(self, cuerpo): self.cuerpo = cuerpo
+        def __enter__(self): return self.cuerpo
+        def __exit__(self, *a): return False
+
+    def falso_urlopen(pedido, timeout):
+        r = respuestas.pop(0)
+        if isinstance(r, Exception):
+            raise r
+        return Respuesta(r)
+
+    monkeypatch.setattr(base.urllib.request, "urlopen", falso_urlopen)
+    monkeypatch.setattr(base.time, "sleep", lambda s: None)
+    assert base.obtener_json("https://ejemplo.com") == {"ok": True}
+
+
+def test_no_reintenta_errores_definitivos(monkeypatch):
+    import urllib.error
+    import pytest
+    from radar_empleo.fuentes import base
+
+    llamadas = []
+
+    def falso_urlopen(pedido, timeout):
+        llamadas.append(1)
+        raise urllib.error.HTTPError("u", 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(base.urllib.request, "urlopen", falso_urlopen)
+    with pytest.raises(urllib.error.HTTPError):
+        base.obtener_json("https://ejemplo.com")
+    assert len(llamadas) == 1
