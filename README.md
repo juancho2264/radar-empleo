@@ -46,8 +46,9 @@ radar_empleo/
 ├── fuentes/             un archivo por sitio de empleo (+ alertas_mail.py)
 ├── telegram.py          mensajes y envío
 ├── estado.py            memoria de ofertas ya revisadas
+├── estadisticas.py      números del día para el resumen diario
 └── __main__.py          punto de entrada
-tests/                   44 tests con pytest
+tests/                   46 tests con pytest
 .github/workflows/       radar.yml (corre 2 veces por día) · tests.yml
 ```
 
@@ -67,7 +68,7 @@ En el repo: *Settings → Secrets and variables → Actions → New repository s
 
 **3. Probarlo**
 
-*Actions → Radar de empleo → Run workflow*. En un minuto te llega el primer aviso. Después corre solo cada 3 horas, de 8:17 a 23:17 (hora de Argentina). Si no hay nada nuevo, no te escribe.
+*Actions → Radar de empleo → Run workflow*. En un minuto te llega el primer aviso. Después corre solo cada 3 horas, de 8:17 a 23:17 (hora de Argentina). Si no hay nada nuevo, no te escribe, salvo **una vez por día (desde las 20 hs)**, cuando manda un resumen corto para confirmar que sigue activo.
 
 **4. (Opcional) Alertas de LinkedIn, Computrabajo, Bumeran, ZonaJobs e Indeed**
 

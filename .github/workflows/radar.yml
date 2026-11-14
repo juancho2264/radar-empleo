@@ -54,6 +54,6 @@ jobs:
         run: |
           git config user.name "radar-empleo[bot]"
           git config user.email "radar-empleo@users.noreply.github.com"
-          git add datos/vistos.json
+          git add datos/
           git diff --cached --quiet || git commit -m "Radar: actualizar ofertas revisadas [skip ci]"
           git push

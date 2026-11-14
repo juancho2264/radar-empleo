@@ -15,11 +15,13 @@ import sys
 import urllib.error
 import urllib.parse
 from collections import Counter
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from . import telegram
 from .evaluador import evaluar
+from .estadisticas import Estadisticas
 from .estado import Vistos
 from .fuentes import alertas_mail, getonboard, remotive
 from .fuentes.base import obtener_json
@@ -28,6 +30,12 @@ from .modelos import Oferta, Perfil
 RAIZ = Path(__file__).resolve().parent.parent
 FUENTES = {"Get on Board": getonboard.buscar, "Remotive": remotive.buscar}
 MAXIMO_ALERTAS_POR_AVISO = 10
+ZONA = ZoneInfo("America/Argentina/Buenos_Aires")
+
+
+def _ahora() -> datetime:
+    """Hora de Argentina. Los servidores de GitHub usan UTC: después de las 21 de acá ya es "mañana" para ellos."""
+    return datetime.now(ZONA)
 
 
 def _fuentes() -> dict:
@@ -46,7 +54,9 @@ def main() -> int:
 
     perfil = Perfil.desde_yaml(RAIZ / "perfil.yaml")
     vistos = Vistos(RAIZ / "datos" / "vistos.json")
-    hoy = date.today()
+    estadisticas = Estadisticas(RAIZ / "datos" / "estadisticas.json")
+    ahora = _ahora()
+    hoy = ahora.date()
 
     ofertas, errores = _buscar_todas()
     nuevas = [o for o in ofertas if not vistos.ya_visto(o.id)]
@@ -65,11 +75,18 @@ def main() -> int:
     mensajes = [(telegram.mensaje_oferta(ev), [("Ver oferta ↗", ev.oferta.url)]) for ev in a_enviar]
     if alertas_a_enviar:
         mensajes.append((telegram.mensaje_alertas(alertas_a_enviar), []))
-    resumen = telegram.mensaje_resumen(len(nuevas), len(utiles), dict(descartes), errores)
-    if resumen:
-        if no_mostradas:
-            resumen += f"\nQuedaron {len(no_mostradas)} para el próximo aviso."
-        mensajes.append((resumen, []))
+    dia = estadisticas.registrar(hoy, revisadas=len(nuevas), utiles=len(utiles),
+                                 de_mail=sum(o.solo_titulo for o in nuevas), errores=len(errores))
+    if estadisticas.toca_resumen_diario(ahora):
+        # Una vez por día, aunque no haya nada: así sabés que el radar sigue funcionando
+        mensajes.append((telegram.mensaje_diario(dia, errores), []))
+        estadisticas.marcar_resumen(hoy)
+    else:
+        resumen = telegram.mensaje_resumen(len(nuevas), len(utiles), dict(descartes), errores)
+        if resumen:
+            if no_mostradas:
+                resumen += f"\nQuedaron {len(no_mostradas)} para el próximo aviso."
+            mensajes.append((resumen, []))
 
     if args.simular:
         for texto, botones in mensajes:
@@ -88,6 +105,7 @@ def main() -> int:
             vistos.marcar(ev.oferta.id, hoy)
     if not args.simular:
         vistos.guardar(hoy)
+        estadisticas.guardar(hoy)
 
     # En los registros de GitHub (que son públicos) solo dejamos números, nada de detalle
     print(f"Ofertas: {len(ofertas)} · nuevas: {len(nuevas)} · útiles: {len(utiles)} · "

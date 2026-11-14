@@ -2,7 +2,7 @@
 
 import json
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from radar_empleo import __main__ as radar
@@ -113,6 +113,7 @@ def test_corrida_completa_simulada(monkeypatch, capsys, tmp_path):
         "Remotive": falla,
     })
     monkeypatch.setattr(radar, "RAIZ", tmp_path)
+    monkeypatch.setattr(radar, "_ahora", lambda: datetime(2026, 11, 14, 10, 0, tzinfo=radar.ZONA))  # a la mañana
     (tmp_path / "perfil.yaml").write_text((Path(__file__).parent.parent / "perfil.yaml").read_text())
     (tmp_path / "cv.txt").write_text("Java Spring Boot")
     monkeypatch.setattr(sys, "argv", ["radar_empleo", "--simular"])
@@ -164,3 +165,34 @@ def test_no_reintenta_errores_definitivos(monkeypatch):
     with pytest.raises(urllib.error.HTTPError):
         base.obtener_json("https://ejemplo.com")
     assert len(llamadas) == 1
+
+
+def _correr(monkeypatch, capsys, tmp_path, ofertas, hora):
+    """Corre el radar (simulado) con ofertas dadas a una hora de Argentina dada. Devuelve lo impreso."""
+    monkeypatch.setattr(radar, "FUENTES", {"Get on Board": lambda: list(ofertas)})
+    monkeypatch.setattr(radar, "RAIZ", tmp_path)
+    monkeypatch.setattr(radar, "_ahora", lambda: datetime(2026, 11, 14, hora, 30, tzinfo=radar.ZONA))
+    if not (tmp_path / "perfil.yaml").exists():
+        (tmp_path / "perfil.yaml").write_text((Path(__file__).parent.parent / "perfil.yaml").read_text())
+    monkeypatch.setattr(sys, "argv", ["radar_empleo"])          # modo real, pero sin mandar nada:
+    enviados = []
+    monkeypatch.setattr(radar.telegram, "enviar", lambda token, chat, texto, botones=None: enviados.append(texto))
+    monkeypatch.setenv("TELEGRAM_TOKEN", "x")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "1")
+    assert radar.main() == 0
+    capsys.readouterr()
+    return enviados
+
+
+def test_sin_novedades_a_la_manana_no_escribe(monkeypatch, capsys, tmp_path):
+    assert _correr(monkeypatch, capsys, tmp_path, [], hora=11) == []
+
+
+def test_resumen_diario_llega_una_sola_vez_aunque_no_haya_nada(monkeypatch, capsys, tmp_path):
+    oferta = getonboard.convertir(ITEM_GETONBOARD)
+    _correr(monkeypatch, capsys, tmp_path, [oferta], hora=11)        # a la mañana: manda la oferta
+    [diario] = _correr(monkeypatch, capsys, tmp_path, [oferta], hora=20)  # ya vista: solo el resumen
+    assert "Radar activo" in diario
+    assert "Revisé 1 oferta nueva en 2 pasadas" in diario            # acumula las corridas del día
+    assert "1 encajó con vos" in diario
+    assert _correr(monkeypatch, capsys, tmp_path, [oferta], hora=23) == []   # no se repite el mismo día

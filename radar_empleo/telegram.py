@@ -12,6 +12,7 @@ import html
 import json
 import urllib.request
 
+from .estadisticas import Dia
 from .modelos import Evaluacion
 
 LIMITE_CARACTERES = 4000  # Telegram corta en 4096
@@ -100,6 +101,22 @@ def mensaje_resumen(revisadas: int, utiles: int, descartes: dict[str, int], erro
     if descartes:
         detalle = ", ".join(f"{cantidad} {motivo}" for motivo, cantidad in sorted(descartes.items(), key=lambda x: -x[1]))
         lineas.append(f"Descarté {sum(descartes.values())}: {e(detalle)}.")
+    for error in errores:
+        lineas.append(f"⚠️ {e(error)}")
+    return "\n".join(lineas)
+
+
+def mensaje_diario(dia: Dia, errores: list[str]) -> str:
+    """Resumen del día: llega siempre (una vez por día), para que sepas que el radar está activo."""
+    lineas = [
+        "📡 <b>Radar activo</b> · resumen del día",
+        f"Revisé {plural(dia.revisadas, 'oferta nueva', 'ofertas nuevas')} en {plural(dia.corridas, 'pasada')}.",
+        f"📬 Alertas por mail: {plural(dia.de_mail, 'oferta recibida', 'ofertas recibidas')}.",
+    ]
+    if dia.utiles:
+        lineas.append(f"✅ <b>{plural(dia.utiles, 'encajó', 'encajaron')} con vos</b> (te las mandé durante el día).")
+    else:
+        lineas.append("Hoy no hubo nada para tu perfil. Mañana sigo buscando.")
     for error in errores:
         lineas.append(f"⚠️ {e(error)}")
     return "\n".join(lineas)

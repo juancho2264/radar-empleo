@@ -1,6 +1,6 @@
 """Tests del lector de alertas por mail, con mails de ejemplo (sin conexión a Gmail)."""
 
-from datetime import date
+from datetime import date, datetime
 from email.message import EmailMessage
 from pathlib import Path
 
@@ -67,9 +67,10 @@ def test_las_alertas_llegan_juntas_en_un_mensaje_con_links(monkeypatch, capsys, 
     import sys
     from radar_empleo import __main__ as radar
 
-    ofertas = ofertas_del_html(HTML_LINKEDIN, LINKEDIN, date.today())
+    ofertas = ofertas_del_html(HTML_LINKEDIN, LINKEDIN, date(2026, 11, 14))
     monkeypatch.setattr(radar, "FUENTES", {"alertas": lambda: ofertas})
     monkeypatch.setattr(radar, "RAIZ", tmp_path)
+    monkeypatch.setattr(radar, "_ahora", lambda: datetime(2026, 11, 14, 10, 0, tzinfo=radar.ZONA))
     (tmp_path / "perfil.yaml").write_text((Path(__file__).parent.parent / "perfil.yaml").read_text())
     monkeypatch.setattr(sys, "argv", ["radar_empleo", "--simular"])
 
