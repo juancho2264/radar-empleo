@@ -21,12 +21,21 @@ from pathlib import Path
 from . import telegram
 from .evaluador import evaluar
 from .estado import Vistos
-from .fuentes import getonboard, remotive
+from .fuentes import alertas_mail, getonboard, remotive
 from .fuentes.base import obtener_json
 from .modelos import Oferta, Perfil
 
 RAIZ = Path(__file__).resolve().parent.parent
 FUENTES = {"Get on Board": getonboard.buscar, "Remotive": remotive.buscar}
+
+
+def _fuentes() -> dict:
+    """Las fuentes fijas, más las alertas por mail si están configuradas (secretos GMAIL_*)."""
+    fuentes = dict(FUENTES)
+    usuario, clave = os.environ.get("GMAIL_USER"), os.environ.get("GMAIL_APP_PASSWORD")
+    if usuario and clave:
+        fuentes[alertas_mail.NOMBRE] = lambda: alertas_mail.buscar(usuario, clave)
+    return fuentes
 
 
 def main() -> int:
@@ -48,9 +57,10 @@ def main() -> int:
 
     mensajes = [(telegram.mensaje_oferta(ev), [("Ver oferta ↗", ev.oferta.url)]) for ev in a_enviar]
     resumen = telegram.mensaje_resumen(len(nuevas), len(utiles), dict(descartes), errores)
-    if len(utiles) > len(a_enviar):
-        resumen += f"\nTe muestro las {len(a_enviar)} mejores; el resto llega en el próximo aviso."
-    mensajes.append((resumen, []))
+    if resumen:
+        if len(utiles) > len(a_enviar):
+            resumen += f"\nTe muestro las {len(a_enviar)} mejores; el resto llega en el próximo aviso."
+        mensajes.append((resumen, []))
 
     if args.simular:
         for texto, botones in mensajes:
@@ -80,7 +90,7 @@ def _buscar_todas() -> tuple[list[Oferta], list[str]]:
     """Consulta cada fuente por separado: si una falla, las otras siguen funcionando."""
     ofertas: dict[str, Oferta] = {}
     errores: list[str] = []
-    for nombre, buscar in FUENTES.items():
+    for nombre, buscar in _fuentes().items():
         try:
             for oferta in buscar():
                 ofertas.setdefault(oferta.id, oferta)
@@ -130,6 +140,22 @@ def _muestra() -> int:
             print(f"  {n['id']} = {n['attributes'].get('name')} ({n['attributes'].get('locale_key')})")
     except Exception as error:  # noqa: BLE001
         print(f"ERROR: {type(error).__name__}: {error}")
+
+    # Alertas por mail: cuántos mails y ofertas encuentra por sitio (solo títulos de puestos, nada personal)
+    usuario, clave = os.environ.get("GMAIL_USER"), os.environ.get("GMAIL_APP_PASSWORD")
+    print("===== Alertas por mail =====")
+    if not (usuario and clave):
+        print("No configuradas (faltan los secretos GMAIL_USER y GMAIL_APP_PASSWORD).")
+    else:
+        try:
+            ofertas_mail = alertas_mail.buscar(usuario, clave)
+            for fuente, cantidad in Counter(o.fuente for o in ofertas_mail).items():
+                titulos = [o.titulo for o in ofertas_mail if o.fuente == fuente][:5]
+                print(f"  {fuente}: {cantidad} ofertas · ejemplos: {titulos}")
+            if not ofertas_mail:
+                print("  Conectó bien, pero no encontró ofertas en mails de alertas de los últimos días.")
+        except Exception as error:  # noqa: BLE001
+            print(f"ERROR: {type(error).__name__}: {error}")
 
     # Corrida real (sin Telegram): solo cantidades, nada de detalle (los registros son públicos)
     print("===== Corrida real sin Telegram =====")

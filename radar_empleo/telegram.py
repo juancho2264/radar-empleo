@@ -48,10 +48,11 @@ def mensaje_oferta(ev: Evaluacion) -> str:
     o = ev.oferta
     color = "🟢" if ev.porcentaje >= 75 else "🟡"
     lugar = "Remoto" + (f" ({o.ubicacion})" if o.ubicacion else "") if o.remoto else (o.ubicacion or "Sin ubicación")
-    lineas = [
-        f"{color} <b>{ev.porcentaje}% · {e(o.titulo)}</b>",
-        f"🏢 {e(o.empresa or 'Empresa sin nombre')} · 📍 {e(lugar)} · {e(o.fuente)}",
-    ]
+    lineas = [f"{color} <b>{ev.porcentaje}% · {e(o.titulo)}</b>"]
+    if o.solo_titulo:
+        lineas.append(f"📬 {e(o.fuente)}")
+    else:
+        lineas.append(f"🏢 {e(o.empresa or 'Empresa sin nombre')} · 📍 {e(lugar)} · {e(o.fuente)}")
     if ev.nivel != "sin especificar":
         lineas.append(f"🎯 Nivel: {e(ev.nivel)}")
     if o.salario:
@@ -62,15 +63,18 @@ def mensaje_oferta(ev: Evaluacion) -> str:
         lineas.append(f"❌ Te falta: {e(', '.join(ev.falta))}")
     for alerta in ev.alertas:
         lineas.append(f"⚠️ Ojo: {e(alerta.motivo)}")
+    if o.solo_titulo:
+        lineas.append("ℹ️ La alerta solo trae el título: leé la oferta completa antes de postularte.")
     if ev.sugerencias:
         lineas.append("\n📝 <b>Para tu CV:</b>")
         lineas.extend(f"• {e(s)}" for s in ev.sugerencias)
     return "\n".join(lineas)
 
 
-def mensaje_resumen(revisadas: int, utiles: int, descartes: dict[str, int], errores: list[str]) -> str:
-    if revisadas == 0 and not errores:
-        return "📡 <b>Radar de empleo</b>\nSin ofertas nuevas desde la última vez."
+def mensaje_resumen(revisadas: int, utiles: int, descartes: dict[str, int], errores: list[str]) -> str | None:
+    """Resumen de la corrida. None = no hay nada que contar (no molestamos con un mensaje vacío)."""
+    if utiles == 0 and not errores:
+        return None
     lineas = [f"📡 <b>Radar de empleo</b>\nRevisé {revisadas} ofertas nuevas: <b>{utiles} te sirven</b>."]
     if descartes:
         detalle = ", ".join(f"{cantidad} {motivo}" for motivo, cantidad in sorted(descartes.items(), key=lambda x: -x[1]))

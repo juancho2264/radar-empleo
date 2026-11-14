@@ -25,6 +25,7 @@ class Oferta:
     salario: str = ""            # tal cual lo informa la fuente
     sitio_empresa: str = ""
     nivel: str = ""              # si la fuente ya clasifica el nivel; si no, se deduce del texto
+    solo_titulo: bool = False    # alertas por mail: solo sabemos el título, no la descripción
 
 
 @dataclass

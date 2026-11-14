@@ -59,10 +59,13 @@ def revisar(oferta: Oferta, hoy: date | None = None) -> list[Alerta]:
         alertas.append(Alerta("media", "El contacto es por WhatsApp o Telegram, no por un canal de la empresa"))
     if CORREO_PERSONAL.search(oferta.descripcion):
         alertas.append(Alerta("media", "Usa un mail personal (Gmail, Hotmail…) en vez de uno de la empresa"))
-    if normalizar(oferta.empresa).strip() in EMPRESA_ANONIMA:
-        alertas.append(Alerta("media", "No dice qué empresa es"))
-    if len(oferta.descripcion) < LARGO_MINIMO_DESCRIPCION:
-        alertas.append(Alerta("media", "La descripción es muy corta o vaga"))
+    # Las alertas por mail traen solo el título: no sabemos la empresa ni la descripción,
+    # así que esas dos reglas no aplican (si no, saltarían siempre)
+    if not oferta.solo_titulo:
+        if normalizar(oferta.empresa).strip() in EMPRESA_ANONIMA:
+            alertas.append(Alerta("media", "No dice qué empresa es"))
+        if len(oferta.descripcion) < LARGO_MINIMO_DESCRIPCION:
+            alertas.append(Alerta("media", "La descripción es muy corta o vaga"))
     if oferta.publicada and (hoy - oferta.publicada).days > DIAS_AVISO_VIEJO:
         alertas.append(Alerta("media", f"Publicada hace más de {DIAS_AVISO_VIEJO} días: puede ser una búsqueda que ya no está activa"))
 
