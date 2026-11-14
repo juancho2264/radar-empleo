@@ -1,0 +1,54 @@
+# Tu perfil: el radar compara cada oferta contra esto.
+# Editalo cuando aprendas algo nuevo (ej. agregá "angular" cuando lo sepas).
+
+nombre: Juan Cruz Ferrandini
+
+# Tecnologías que sabés usar. Los nombres tienen que coincidir con los del catálogo
+# (radar_empleo/catalogo.py), que ya sabe que "Spring" y "Spring Boot" son lo mismo, etc.
+habilidades:
+  - java
+  - spring boot
+  - spring security
+  - jpa
+  - jwt
+  - api rest
+  - python
+  - javascript
+  - react
+  - html
+  - css
+  - sql
+  - junit
+  - testing
+  - git
+  - github
+  - github actions
+  - docker
+  - maven
+  - google cloud
+  - playwright
+  - ci/cd
+
+# Qué tan bien tiene que encajar una oferta para avisarte (0 a 100)
+compatibilidad_minima: 50
+
+# Niveles que te sirven. Ofertas que piden "senior" o "semi senior" se descartan.
+niveles_aceptados: [trainee, junior, sin especificar]
+
+# Dónde podés trabajar. Remoto siempre suma.
+ubicaciones: [argentina, buenos aires, caba, gba, latam, remoto]
+
+# Si la oferta menciona alguna de estas palabras, ni te la muestro
+excluir: [call center, ventas puerta a puerta, comisión pura, multinivel]
+
+# Proyectos de tu CV y qué tecnologías muestran (para sugerirte cuál destacar)
+proyectos:
+  TurnoBot: [java, spring boot, spring security, jpa, jwt, api rest, react, docker, junit, testing, github actions, ci/cd, sql, maven, playwright]
+  Michael Jordan en datos: [javascript, html, css, testing]
+  Landing Box Group: [html, css, javascript]
+
+# Máximo de ofertas por aviso (para no llenarte el Telegram)
+maximo_por_aviso: 5
+
+# Texto de tu CV actual (para saber cómo escribís cada tecnología)
+cv: cv.txt

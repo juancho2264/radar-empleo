@@ -1,0 +1,46 @@
+# Texto del CV (sin datos de contacto): el radar lo usa para saber cómo escribís cada tecnología.
+
+PERFIL
+Desarrollador full stack en formación, estudiante de 2.º año de Gestión de Tecnología de la Información (UADE) y Técnico
+Electrónico, certificado en Google Cloud. Construí y publiqué TurnoBot, una aplicación de turnos por chat con Java + Spring
+Boot, React, autenticación JWT, tests automatizados y Docker. Mi experiencia en planta industrial me permite entender
+cómo funciona un negocio por dentro y dónde la tecnología ahorra tiempo.
+PROYECTOS
+TurnoBot — turnos por chat para negocios                                                        github.com/juancho2264/turnobot
+Java 17, Spring Boot, Spring Data JPA, Spring Security + JWT, React, Docker, JUnit, GitHub Actions · demo online
+Desarrollé una API REST que calcula horarios libres y reserva turnos sin superposiciones, con control de concurrencia.
+Programé un intérprete de lenguaje natural en castellano (“corte y barba el viernes a la tarde”) y una conversación
+basada en máquina de estados.
+Implementé un panel de administración con login JWT, agenda por profesional y estadísticas de ingresos y ocupación.
+Escribí 29 tests automatizados (unitarios y de integración) que corren en GitHub Actions; despliegue con Docker en
+Render.
+Michael Jordan · una carrera en datos                                                             github.com/juancho2264/Jordan
+JavaScript (módulos ES), SVG, JSON, HTML, CSS · demo online
+Dibujé un gráfico interactivo en SVG sin librerías con las 15 temporadas, generado a partir de datos en JSON.
+Separé datos, estilos y lógica en módulos; interfaz accesible con teclado y ARIA, sin innerHTML para evitar inyección de
+código.
+Landing corporativa — Box Group                                                                github.com/juancho2264/GreenBox
+HTML, CSS Grid, JavaScript, Formspree · sitio online
+Sitio responsive para una fábrica de cajas de cartón, con formulario asíncrono que envía consultas por mail y botón de
+WhatsApp.
+HABILIDADES TÉCNICAS
+Backend: Java, Spring Boot, Spring Data JPA, Spring Security, JWT, APIs REST, Python
+Frontend: JavaScript, React, HTML, CSS, diseño responsive y accesible
+Bases de datos y testing: SQL, PostgreSQL, H2 · JUnit 5, tests de integración, Playwright
+Cloud y herramientas: Google Cloud, Docker, GitHub Actions, Git, GitHub, Maven, Render
+EXPERIENCIA LABORAL
+Control y Apoyo en Producción · Green Box                                                                           2024 – 2025
+Seguí pedidos y despachos de punta a punta, coordinando producción, cargas y tiempos de entrega.
+Detecté demoras en procesos internos y propuse mejoras para reducirlas.
+Asistencia Técnica y Calidad · Sacabocados W.A.N                                                                 2023 – 2024
+Realicé control de calidad en la fabricación de troqueles rotativos y resolví problemas técnicos del proceso productivo.
+Organicé pedidos y seguí su avance en las distintas etapas de fabricación.
+EDUCACIÓN
+Lic. en Gestión de Tecnología de la Información · UADE                                                     2024 – actualidad
+2.º año. Formación relevante: Algoritmos y Estructuras de Datos I y II, POO, Testing, Desarrollo Web, Sistemas de
+Información, Aplicaciones Interactivas.
+Técnico Electrónico · Escuela Técnica N.º 1 de Merlo                                                                2016 – 2022
+CERTIFICACIONES E IDIOMAS
+Google Cloud — Professional Certification in Cloud Computing (marzo 2026) · ver credencial
+Español: nativo · Inglés: básico (leo documentación técnica con herramientas de traducción e IA)
+

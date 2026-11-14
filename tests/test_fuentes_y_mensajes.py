@@ -1,0 +1,115 @@
+"""Tests de conversión de las fuentes, mensajes de Telegram y una corrida completa simulada."""
+
+import json
+import sys
+from datetime import date
+from pathlib import Path
+
+from radar_empleo import __main__ as radar
+from radar_empleo import telegram
+from radar_empleo.estado import Vistos
+from radar_empleo.evaluador import evaluar
+from radar_empleo.fuentes import getonboard, remotive
+from radar_empleo.fuentes.base import html_a_texto
+from radar_empleo.modelos import Perfil
+
+PERFIL = Perfil.desde_yaml(Path(__file__).parent.parent / "perfil.yaml")
+
+ITEM_GETONBOARD = {
+    "id": "desarrollador-java-junior-acme",
+    "type": "job",
+    "attributes": {
+        "title": "Desarrollador Java Junior",
+        "description": "<p>Buscamos dev <b>Java</b> con Spring Boot, APIs REST y SQL.</p>",
+        "functions": "<ul><li>Desarrollar microservicios</li><li>Escribir tests con JUnit</li></ul>",
+        "desirable": "<p>Docker &amp; Git</p>",
+        "benefits": "<p>Obra social, capacitaciones y horario flexible para estudiantes universitarios.</p>" * 3,
+        "remote": True,
+        "remote_modality": "fully_remote",
+        "countries": ["Argentina"],
+        "published_at": 1794571200,  # 2026-11-13 12:00 UTC
+        "min_salary": 800,
+        "max_salary": 1100,
+        "company": {"data": {"id": "acme", "attributes": {"name": "Acme Software", "web": "https://acme.com"}}},
+    },
+    "links": {"public_url": "https://www.getonbrd.com/jobs/programming/desarrollador-java-junior-acme"},
+}
+
+ITEM_REMOTIVE = {
+    "id": 1912345,
+    "url": "https://remotive.com/remote-jobs/software-dev/junior-react-developer-1912345",
+    "title": "Junior React Developer",
+    "company_name": "Globex",
+    "tags": ["react", "javascript", "typescript"],
+    "publication_date": "2026-11-12T10:00:00",
+    "candidate_required_location": "USA",
+    "salary": "$50k",
+    "description": "<p>We are looking for a junior React developer with JavaScript and TypeScript.</p>" * 4,
+}
+
+
+def test_convierte_getonboard():
+    o = getonboard.convertir(ITEM_GETONBOARD)
+    assert o.id == "getonboard:desarrollador-java-junior-acme"
+    assert o.empresa == "Acme Software"
+    assert o.remoto and o.ubicacion == "Argentina"
+    assert o.publicada == date(2026, 11, 13)
+    assert o.salario == "USD 800–1100"
+    assert "<" not in o.descripcion and "Docker & Git" in o.descripcion
+    assert o.url.startswith("https://www.getonbrd.com/jobs/")
+
+
+def test_getonboard_tolera_campos_faltantes():
+    o = getonboard.convertir({"id": "x", "attributes": {"title": "Dev"}})
+    assert o.titulo == "Dev" and o.empresa == "" and o.publicada is None
+
+
+def test_remotive_solo_usa_se_descarta():
+    o = remotive.convertir(ITEM_REMOTIVE)
+    assert o.publicada == date(2026, 11, 12)
+    ev = evaluar(o, PERFIL, date(2026, 11, 14))
+    assert ev.descartada_por == "Solo para candidatos de USA"
+
+
+def test_html_a_texto():
+    assert html_a_texto("<p>Hola&nbsp;<b>mundo</b></p><p>chau</p>") == "Hola mundo\nchau"
+
+
+def test_mensaje_escapa_html_y_muestra_todo():
+    o = getonboard.convertir(ITEM_GETONBOARD)
+    o.titulo = "Dev <Java> & Spring"
+    ev = evaluar(o, PERFIL, date(2026, 11, 14))
+    texto = telegram.mensaje_oferta(ev)
+    assert "Dev &lt;Java&gt; &amp; Spring" in texto       # un "<" sin escapar rompería el mensaje
+    assert "✅ Tenés:" in texto and "📝 <b>Para tu CV:</b>" in texto
+    assert "USD 800–1100" in texto
+
+
+def test_memoria_olvida_lo_viejo(tmp_path):
+    vistos = Vistos(tmp_path / "vistos.json")
+    vistos.marcar("a", date(2026, 1, 1))
+    vistos.marcar("b", date(2026, 11, 1))
+    vistos.guardar(date(2026, 11, 14))
+    assert json.loads((tmp_path / "vistos.json").read_text()) == {"b": "2026-11-01"}
+
+
+def test_corrida_completa_simulada(monkeypatch, capsys, tmp_path):
+    """Todo el flujo sin internet: fuentes falsas, una de ellas falla, y la salida va a la pantalla."""
+    def falla():
+        raise TimeoutError("sin respuesta")
+
+    monkeypatch.setattr(radar, "FUENTES", {
+        "Get on Board": lambda: [getonboard.convertir(ITEM_GETONBOARD)],
+        "Remotive": falla,
+    })
+    monkeypatch.setattr(radar, "RAIZ", tmp_path)
+    (tmp_path / "perfil.yaml").write_text((Path(__file__).parent.parent / "perfil.yaml").read_text())
+    (tmp_path / "cv.txt").write_text("Java Spring Boot")
+    monkeypatch.setattr(sys, "argv", ["radar_empleo", "--simular"])
+
+    assert radar.main() == 0
+    salida = capsys.readouterr().out
+    assert "Desarrollador Java Junior" in salida
+    assert "[Ver oferta ↗] https://www.getonbrd.com/jobs/" in salida
+    assert "Revisé 1 ofertas nuevas: <b>1 te sirven</b>" in salida
+    assert "No pude consultar Remotive: TimeoutError" in salida   # una fuente caída no frena a las demás
