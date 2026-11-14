@@ -176,7 +176,8 @@ def _correr(monkeypatch, capsys, tmp_path, ofertas, hora):
         (tmp_path / "perfil.yaml").write_text((Path(__file__).parent.parent / "perfil.yaml").read_text())
     monkeypatch.setattr(sys, "argv", ["radar_empleo"])          # modo real, pero sin mandar nada:
     enviados = []
-    monkeypatch.setattr(radar.telegram, "enviar", lambda token, chat, texto, botones=None: enviados.append(texto))
+    monkeypatch.setattr(radar.telegram, "enviar", lambda token, chat, texto, teclado=None: enviados.append(texto))
+    monkeypatch.setattr(radar.telegram, "novedades", lambda token, desde: [])   # nadie tocó botones
     monkeypatch.setenv("TELEGRAM_TOKEN", "x")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "1")
     assert radar.main() == 0

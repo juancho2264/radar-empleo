@@ -15,7 +15,7 @@ import sys
 import urllib.error
 import urllib.parse
 from collections import Counter
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -26,6 +26,7 @@ from .estado import Vistos
 from .fuentes import alertas_mail, getonboard, remotive
 from .fuentes.base import obtener_json
 from .modelos import Oferta, Perfil
+from .postulaciones import Accion, Postulaciones, mensaje_pregunta_seguimiento
 
 RAIZ = Path(__file__).resolve().parent.parent
 FUENTES = {"Get on Board": getonboard.buscar, "Remotive": remotive.buscar}
@@ -47,6 +48,33 @@ def _fuentes() -> dict:
     return fuentes
 
 
+class _Salida:
+    """Manda a Telegram, o imprime en pantalla con --simular. Así el resto del código no distingue."""
+
+    def __init__(self, simular: bool, token: str | None, chat_id: str | None):
+        self.simular, self.token, self.chat_id = simular, token, chat_id
+
+    def enviar(self, texto: str, teclado: list | None = None) -> None:
+        if self.simular:
+            botones = [f"[{t}] {v}" for fila in (teclado or []) for t, v in fila]
+            print(texto, *botones, sep="\n", end="\n\n")
+        else:
+            telegram.enviar(self.token, self.chat_id, texto, teclado)
+
+    def ejecutar(self, accion: Accion) -> None:
+        if accion.tipo == "mensaje":
+            self.enviar(accion.texto)
+        elif self.simular:
+            return
+        elif accion.tipo == "responder_boton":
+            telegram.responder_boton(self.token, accion.callback_id, accion.texto)
+        elif accion.tipo == "editar_botones":
+            try:
+                telegram.editar_botones(self.token, self.chat_id, accion.mensaje_id, accion.teclado)
+            except Exception:  # noqa: BLE001 — un mensaje muy viejo ya no se puede editar: el registro vale igual
+                pass
+
+
 def main() -> int:
     args = _argumentos()
     if args.muestra:
@@ -58,54 +86,83 @@ def main() -> int:
     ahora = _ahora()
     hoy = ahora.date()
 
-    ofertas, errores = _buscar_todas()
+    token, chat_id = os.environ.get("TELEGRAM_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+    if not args.simular and not (token and chat_id):
+        print("Faltan TELEGRAM_TOKEN o TELEGRAM_CHAT_ID (ver README).", file=sys.stderr)
+        return 1
+    salida = _Salida(args.simular, token, chat_id)
+    postulaciones = Postulaciones(RAIZ / "datos" / "postulaciones.enc", token or "simulacion")
+    errores: list[str] = []
+
+    # 1. Lo que tocaste en Telegram desde la última pasada ("Me postulé", "No me interesa", /postulaciones…)
+    if not args.simular:
+        try:
+            for accion in postulaciones.procesar(telegram.novedades(token, postulaciones.offset), chat_id, hoy):
+                salida.ejecutar(accion)
+        except Exception as error:  # noqa: BLE001
+            errores.append(f"No pude leer los botones de Telegram: {type(error).__name__}. Reintento en el próximo aviso.")
+
+    # 2. Buscar y evaluar ofertas nuevas
+    ofertas, errores_fuentes = _buscar_todas()
+    errores += errores_fuentes
     nuevas = [o for o in ofertas if not vistos.ya_visto(o.id)]
     evaluaciones = [evaluar(o, perfil, hoy) for o in nuevas]
-
     utiles = sorted((ev for ev in evaluaciones if ev.sirve), key=lambda ev: -ev.porcentaje)
     descartes = Counter(_categoria(ev.descartada_por) for ev in evaluaciones if not ev.sirve)
 
-    # Ofertas completas: un mensaje cada una. De alertas por mail (solo título): todas juntas en uno.
+    # Para el reporte semanal: qué piden las ofertas de TU nivel (aunque no te sirvan por ubicación o idioma)
+    estadisticas.registrar_mercado(hoy, [ev.tiene + ev.falta for ev in evaluaciones
+                                         if ev.nivel in perfil.niveles_aceptados and not ev.oferta.solo_titulo
+                                         and (ev.tiene or ev.falta)])
+
+    # 3. Mandar ofertas. Completas: una por mensaje. De alertas por mail (solo título): todas juntas.
     completas = [ev for ev in utiles if not ev.oferta.solo_titulo]
     de_alertas = [ev for ev in utiles if ev.oferta.solo_titulo]
     a_enviar = completas[: perfil.maximo_por_aviso]
     alertas_a_enviar = de_alertas[:MAXIMO_ALERTAS_POR_AVISO]
     no_mostradas = {ev.oferta.id for ev in completas[perfil.maximo_por_aviso:] + de_alertas[MAXIMO_ALERTAS_POR_AVISO:]}
 
-    mensajes = [(telegram.mensaje_oferta(ev), [("Ver oferta ↗", ev.oferta.url)]) for ev in a_enviar]
+    for ev in a_enviar:
+        clave = postulaciones.registrar_enviada(ev.oferta, hoy)
+        salida.enviar(telegram.mensaje_oferta(ev), Postulaciones.teclado_oferta(clave, ev.oferta.url))
     if alertas_a_enviar:
-        mensajes.append((telegram.mensaje_alertas(alertas_a_enviar), []))
+        claves = [postulaciones.registrar_enviada(ev.oferta, hoy) for ev in alertas_a_enviar]
+        salida.enviar(telegram.mensaje_alertas(alertas_a_enviar), Postulaciones.teclado_alertas(claves))
+
+    # 4. ¿Te respondieron? (postulaciones de hace una semana)
+    for clave, oferta in postulaciones.pendientes_de_seguimiento(hoy):
+        salida.enviar(mensaje_pregunta_seguimiento(oferta),
+                      [[("Ver oferta ↗", oferta["url"])]] + Postulaciones.teclado_seguimiento(clave))
+        postulaciones.marcar_preguntado(clave)
+
+    # 5. Resúmenes
     dia = estadisticas.registrar(hoy, revisadas=len(nuevas), utiles=len(utiles),
                                  de_mail=sum(o.solo_titulo for o in nuevas), errores=len(errores))
+    if estadisticas.toca_resumen_semanal(ahora):
+        lunes = hoy - timedelta(days=hoy.weekday())
+        salida.enviar(telegram.mensaje_semanal(estadisticas.mercado(hoy), perfil.habilidades,
+                                               estadisticas.revisadas_en_semana(hoy),
+                                               postulaciones.postulaciones_entre(lunes, hoy)))
+        estadisticas.marcar_semanal(hoy)
     if estadisticas.toca_resumen_diario(ahora):
         # Una vez por día, aunque no haya nada: así sabés que el radar sigue funcionando
-        mensajes.append((telegram.mensaje_diario(dia, errores), []))
+        salida.enviar(telegram.mensaje_diario(dia, errores))
         estadisticas.marcar_resumen(hoy)
     else:
         resumen = telegram.mensaje_resumen(len(nuevas), len(utiles), dict(descartes), errores)
         if resumen:
             if no_mostradas:
                 resumen += f"\nQuedaron {len(no_mostradas)} para el próximo aviso."
-            mensajes.append((resumen, []))
+            salida.enviar(resumen)
 
-    if args.simular:
-        for texto, botones in mensajes:
-            print(texto, *(f"[{t}] {u}" for t, u in botones), sep="\n", end="\n\n")
-    else:
-        token, chat_id = os.environ.get("TELEGRAM_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
-        if not token or not chat_id:
-            print("Faltan TELEGRAM_TOKEN o TELEGRAM_CHAT_ID (ver README).", file=sys.stderr)
-            return 1
-        for texto, botones in mensajes:
-            telegram.enviar(token, chat_id, texto, botones)
-
-    # Las que no se mostraron por el límite quedan sin marcar: salen en el próximo aviso
+    # 6. Guardar memoria. Las que no se mostraron por el límite quedan sin marcar: salen en el próximo aviso.
     for ev in evaluaciones:
         if ev.oferta.id not in no_mostradas:
             vistos.marcar(ev.oferta.id, hoy)
     if not args.simular:
         vistos.guardar(hoy)
         estadisticas.guardar(hoy)
+        postulaciones.guardar(hoy)
 
     # En los registros de GitHub (que son públicos) solo dejamos números, nada de detalle
     print(f"Ofertas: {len(ofertas)} · nuevas: {len(nuevas)} · útiles: {len(utiles)} · "

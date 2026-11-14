@@ -13,7 +13,15 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 HORA_RESUMEN_DIARIO = 20  # el primer aviso desde las 20 hs (de Argentina) incluye el resumen del día
+DIA_RESUMEN_SEMANAL = 6   # domingo (lunes = 0)
 DIAS_A_GUARDAR = 30
+SEMANAS_A_GUARDAR = 8
+
+
+def semana_de(fecha: date) -> str:
+    """"2026-W46": el año y número de semana ISO (las semanas empiezan el lunes)."""
+    anio, semana, _ = fecha.isocalendar()
+    return f"{anio}-W{semana:02d}"
 
 
 @dataclass
@@ -31,6 +39,9 @@ class Estadisticas:
         datos = json.loads(self.ruta.read_text()) if self.ruta.exists() else {}
         self.dias: dict[str, Dia] = {f: Dia(**d) for f, d in datos.get("dias", {}).items()}
         self.ultimo_resumen: str = datos.get("ultimo_resumen", "")
+        # Mercado: por semana, cuántas ofertas de tu nivel se vieron y cuántas pedían cada tecnología
+        self.semanas: dict[str, dict] = datos.get("semanas", {})
+        self.ultimo_semanal: str = datos.get("ultimo_semanal", "")
 
     def dia(self, fecha: date) -> Dia:
         return self.dias.setdefault(fecha.isoformat(), Dia())
@@ -51,11 +62,38 @@ class Estadisticas:
     def marcar_resumen(self, fecha: date) -> None:
         self.ultimo_resumen = fecha.isoformat()
 
+    # ---------- Mercado (para el reporte semanal) ----------
+
+    def registrar_mercado(self, fecha: date, tecnologias_por_oferta: list[list[str]]) -> None:
+        """Recibe, por cada oferta de tu nivel, la lista de tecnologías que pide."""
+        semana = self.semanas.setdefault(semana_de(fecha), {"ofertas": 0, "tecnologias": {}})
+        for tecnologias in tecnologias_por_oferta:
+            semana["ofertas"] += 1
+            for t in set(tecnologias):
+                semana["tecnologias"][t] = semana["tecnologias"].get(t, 0) + 1
+
+    def mercado(self, fecha: date) -> dict:
+        return self.semanas.get(semana_de(fecha), {"ofertas": 0, "tecnologias": {}})
+
+    def toca_resumen_semanal(self, ahora: datetime) -> bool:
+        return (ahora.weekday() == DIA_RESUMEN_SEMANAL and ahora.hour >= HORA_RESUMEN_DIARIO
+                and self.ultimo_semanal != semana_de(ahora.date()))
+
+    def marcar_semanal(self, fecha: date) -> None:
+        self.ultimo_semanal = semana_de(fecha)
+
+    def revisadas_en_semana(self, fecha: date) -> int:
+        semana = semana_de(fecha)
+        return sum(d.revisadas for f, d in self.dias.items() if semana_de(date.fromisoformat(f)) == semana)
+
     def guardar(self, hoy: date) -> None:
         limite = (hoy - timedelta(days=DIAS_A_GUARDAR)).isoformat()
+        semanas = dict(sorted(self.semanas.items())[-SEMANAS_A_GUARDAR:])
         datos = {
             "ultimo_resumen": self.ultimo_resumen,
+            "ultimo_semanal": self.ultimo_semanal,
             "dias": {f: asdict(d) for f, d in sorted(self.dias.items()) if f >= limite},
+            "semanas": semanas,
         }
         self.ruta.parent.mkdir(parents=True, exist_ok=True)
         self.ruta.write_text(json.dumps(datos, indent=1) + "\n")
