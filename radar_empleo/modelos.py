@@ -24,6 +24,7 @@ class Oferta:
     publicada: date | None = None
     salario: str = ""            # tal cual lo informa la fuente
     sitio_empresa: str = ""
+    nivel: str = ""              # si la fuente ya clasifica el nivel; si no, se deduce del texto
 
 
 @dataclass

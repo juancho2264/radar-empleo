@@ -19,6 +19,9 @@ NOMBRE = "Get on Board"
 URL = "https://www.getonbrd.com/api/v0/search/jobs"
 BUSQUEDAS = ["java", "spring", "react", "javascript", "python", "junior", "trainee"]
 
+# Escala oficial de niveles (GET /api/v0/seniorities): 1 Sin experiencia · 2 Junior · 3 Semi Senior · 4 Senior · 5 Expert
+NIVELES = {1: "trainee", 2: "junior", 3: "semi senior", 4: "senior", 5: "senior"}
+
 
 def buscar(busquedas: list[str] | None = None) -> list[Oferta]:
     ofertas: dict[str, Oferta] = {}
@@ -52,7 +55,15 @@ def convertir(item: dict) -> Oferta:
         publicada=_fecha(a.get("published_at")),
         salario=_salario(a.get("min_salary"), a.get("max_salary")),
         sitio_empresa=empresa.get("web", "") or "",
+        nivel=_nivel(a.get("seniority")),
     )
+
+
+def _nivel(seniority) -> str:
+    try:
+        return NIVELES.get(int(seniority["data"]["id"]), "")
+    except (TypeError, KeyError, ValueError):
+        return ""
 
 
 def _fecha(valor) -> datetime.date | None:

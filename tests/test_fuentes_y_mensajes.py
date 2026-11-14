@@ -30,6 +30,7 @@ ITEM_GETONBOARD = {
         "published_at": 1794571200,  # 2026-11-13 12:00 UTC
         "min_salary": 800,
         "max_salary": 1100,
+        "seniority": {"data": {"id": 2, "type": "seniority"}},
         "company": {"data": {"id": "acme", "attributes": {"name": "Acme Software", "web": "https://acme.com"}}},
     },
     "links": {"public_url": "https://www.getonbrd.com/jobs/programming/desarrollador-java-junior-acme"},
@@ -57,6 +58,15 @@ def test_convierte_getonboard():
     assert o.salario == "USD 800–1100"
     assert "<" not in o.descripcion and "Docker & Git" in o.descripcion
     assert o.url.startswith("https://www.getonbrd.com/jobs/")
+
+
+def test_getonboard_usa_el_nivel_oficial():
+    # Título sin nivel, pero Get on Board lo clasificó como Semi Senior (id 3): manda la fuente
+    item = {**ITEM_GETONBOARD, "attributes": {**ITEM_GETONBOARD["attributes"], "title": "Desarrollador Java",
+                                              "seniority": {"data": {"id": 3, "type": "seniority"}}}}
+    ev = evaluar(getonboard.convertir(item), PERFIL, date(2026, 11, 14))
+    assert ev.nivel == "semi senior" and ev.descartada_por == "Pide nivel semi senior"
+    assert getonboard.convertir(ITEM_GETONBOARD).nivel == "junior"
 
 
 def test_getonboard_tolera_campos_faltantes():

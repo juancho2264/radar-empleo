@@ -70,6 +70,9 @@ def detectar_nivel(oferta: Oferta) -> str:
     - En la DESCRIPCIÓN hay que ser más cuidadoso: "vas a trabajar con seniors" no hace senior
       al puesto. Ahí miramos los años de experiencia pedidos o frases como "desarrollador senior".
     """
+    if oferta.nivel:  # la fuente ya lo clasificó (ej. Get on Board): es más confiable que el texto
+        return oferta.nivel
+
     nivel_titulo = _nivel_por_palabras(normalizar(oferta.titulo))
     if nivel_titulo:
         return nivel_titulo
