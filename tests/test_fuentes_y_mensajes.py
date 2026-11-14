@@ -121,7 +121,7 @@ def test_corrida_completa_simulada(monkeypatch, capsys, tmp_path):
     salida = capsys.readouterr().out
     assert "Desarrollador Java Junior" in salida
     assert "[Ver oferta ↗] https://www.getonbrd.com/jobs/" in salida
-    assert "Revisé 1 ofertas nuevas: <b>1 te sirven</b>" in salida
+    assert "Revisé 1 oferta nueva: <b>1 te sirve</b>" in salida
     assert "No pude consultar Remotive: TimeoutError" in salida   # una fuente caída no frena a las demás
 
 

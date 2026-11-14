@@ -61,3 +61,20 @@ def test_oferta_de_alerta_se_evalua_por_el_titulo():
     assert ev.sirve, ev.descartada_por
     assert antiestafa.revisar(java, date(2026, 11, 14)) == []   # sin descripción no salta "descripción vaga"
     assert not evaluar(net, PERFIL, date(2026, 11, 14)).sirve    # senior y .NET
+
+
+def test_las_alertas_llegan_juntas_en_un_mensaje_con_links(monkeypatch, capsys, tmp_path):
+    import sys
+    from radar_empleo import __main__ as radar
+
+    ofertas = ofertas_del_html(HTML_LINKEDIN, LINKEDIN, date.today())
+    monkeypatch.setattr(radar, "FUENTES", {"alertas": lambda: ofertas})
+    monkeypatch.setattr(radar, "RAIZ", tmp_path)
+    (tmp_path / "perfil.yaml").write_text((Path(__file__).parent.parent / "perfil.yaml").read_text())
+    monkeypatch.setattr(sys, "argv", ["radar_empleo", "--simular"])
+
+    assert radar.main() == 0
+    salida = capsys.readouterr().out
+    assert "📬 <b>1 oferta de tus alertas para revisar</b>" in salida
+    assert '<a href="https://www.linkedin.com/comm/jobs/view/3912345678/">Desarrollador Java Junior</a>' in salida
+    assert "Senior .NET" not in salida

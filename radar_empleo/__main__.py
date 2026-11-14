@@ -27,6 +27,7 @@ from .modelos import Oferta, Perfil
 
 RAIZ = Path(__file__).resolve().parent.parent
 FUENTES = {"Get on Board": getonboard.buscar, "Remotive": remotive.buscar}
+MAXIMO_ALERTAS_POR_AVISO = 10
 
 
 def _fuentes() -> dict:
@@ -52,14 +53,22 @@ def main() -> int:
     evaluaciones = [evaluar(o, perfil, hoy) for o in nuevas]
 
     utiles = sorted((ev for ev in evaluaciones if ev.sirve), key=lambda ev: -ev.porcentaje)
-    a_enviar = utiles[: perfil.maximo_por_aviso]
     descartes = Counter(_categoria(ev.descartada_por) for ev in evaluaciones if not ev.sirve)
 
+    # Ofertas completas: un mensaje cada una. De alertas por mail (solo título): todas juntas en uno.
+    completas = [ev for ev in utiles if not ev.oferta.solo_titulo]
+    de_alertas = [ev for ev in utiles if ev.oferta.solo_titulo]
+    a_enviar = completas[: perfil.maximo_por_aviso]
+    alertas_a_enviar = de_alertas[:MAXIMO_ALERTAS_POR_AVISO]
+    no_mostradas = {ev.oferta.id for ev in completas[perfil.maximo_por_aviso:] + de_alertas[MAXIMO_ALERTAS_POR_AVISO:]}
+
     mensajes = [(telegram.mensaje_oferta(ev), [("Ver oferta ↗", ev.oferta.url)]) for ev in a_enviar]
+    if alertas_a_enviar:
+        mensajes.append((telegram.mensaje_alertas(alertas_a_enviar), []))
     resumen = telegram.mensaje_resumen(len(nuevas), len(utiles), dict(descartes), errores)
     if resumen:
-        if len(utiles) > len(a_enviar):
-            resumen += f"\nTe muestro las {len(a_enviar)} mejores; el resto llega en el próximo aviso."
+        if no_mostradas:
+            resumen += f"\nQuedaron {len(no_mostradas)} para el próximo aviso."
         mensajes.append((resumen, []))
 
     if args.simular:
@@ -74,7 +83,6 @@ def main() -> int:
             telegram.enviar(token, chat_id, texto, botones)
 
     # Las que no se mostraron por el límite quedan sin marcar: salen en el próximo aviso
-    no_mostradas = {ev.oferta.id for ev in utiles[perfil.maximo_por_aviso:]}
     for ev in evaluaciones:
         if ev.oferta.id not in no_mostradas:
             vistos.marcar(ev.oferta.id, hoy)
@@ -82,7 +90,8 @@ def main() -> int:
         vistos.guardar(hoy)
 
     # En los registros de GitHub (que son públicos) solo dejamos números, nada de detalle
-    print(f"Ofertas: {len(ofertas)} · nuevas: {len(nuevas)} · útiles: {len(utiles)} · enviadas: {len(a_enviar)}")
+    print(f"Ofertas: {len(ofertas)} · nuevas: {len(nuevas)} · útiles: {len(utiles)} · "
+          f"enviadas: {len(a_enviar)} completas + {len(alertas_a_enviar)} de alertas")
     return 0
 
 

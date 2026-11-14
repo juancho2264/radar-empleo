@@ -39,6 +39,11 @@ def enviar(token: str, chat_id: str, texto: str, botones: list[tuple[str, str]] 
         raise RuntimeError(f"Telegram rechazó el mensaje: {resultado.get('description')}")
 
 
+def plural(n: int, palabra: str, plural_de: str | None = None) -> str:
+    """plural(1, "oferta") → "1 oferta" · plural(3, "oferta") → "3 ofertas"."""
+    return f"{n} {palabra if n == 1 else (plural_de or palabra + 's')}"
+
+
 def e(texto: str) -> str:
     """Escapa texto para el modo HTML de Telegram (si no, un "<" en un título rompe el mensaje)."""
     return html.escape(texto, quote=False)
@@ -71,11 +76,27 @@ def mensaje_oferta(ev: Evaluacion) -> str:
     return "\n".join(lineas)
 
 
+def mensaje_alertas(evaluaciones: list[Evaluacion]) -> str:
+    """
+    Las ofertas de alertas por mail van todas juntas en un solo mensaje compacto:
+    solo sabemos el título, así que son "para revisar", no avisos completos.
+    """
+    lineas = [f"📬 <b>{plural(len(evaluaciones), 'oferta')} de tus alertas para revisar</b>",
+              "<i>Encaje calculado solo con el título: leé la oferta antes de postularte.</i>", ""]
+    for ev in evaluaciones:
+        o = ev.oferta
+        lineas.append(f'🔵 {ev.porcentaje}% · <a href="{e(o.url)}">{e(o.titulo)}</a> · {e(o.fuente.replace(" (alerta)", ""))}')
+        if ev.tiene:
+            lineas.append(f"    ✅ {e(', '.join(ev.tiene))}" + (f" · ❌ {e(', '.join(ev.falta))}" if ev.falta else ""))
+    return "\n".join(lineas)
+
+
 def mensaje_resumen(revisadas: int, utiles: int, descartes: dict[str, int], errores: list[str]) -> str | None:
     """Resumen de la corrida. None = no hay nada que contar (no molestamos con un mensaje vacío)."""
     if utiles == 0 and not errores:
         return None
-    lineas = [f"📡 <b>Radar de empleo</b>\nRevisé {revisadas} ofertas nuevas: <b>{utiles} te sirven</b>."]
+    lineas = [f"📡 <b>Radar de empleo</b>\nRevisé {plural(revisadas, 'oferta nueva', 'ofertas nuevas')}: "
+              f"<b>{utiles} te {'sirve' if utiles == 1 else 'sirven'}</b>."]
     if descartes:
         detalle = ", ".join(f"{cantidad} {motivo}" for motivo, cantidad in sorted(descartes.items(), key=lambda x: -x[1]))
         lineas.append(f"Descarté {sum(descartes.values())}: {e(detalle)}.")
