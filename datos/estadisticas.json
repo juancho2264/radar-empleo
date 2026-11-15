@@ -3,10 +3,10 @@
  "ultimo_semanal": "",
  "dias": {
   "2026-11-14": {
-   "corridas": 1,
-   "revisadas": 0,
+   "corridas": 2,
+   "revisadas": 6,
    "utiles": 0,
-   "de_mail": 0,
+   "de_mail": 6,
    "errores": 0
   }
  },
