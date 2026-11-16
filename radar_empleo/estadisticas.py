@@ -12,6 +12,8 @@ from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+HORA_DESDE, HORA_HASTA = 8, 24              # se buscan ofertas entre las 8 y las 24 (hora de Argentina)
+ENTRE_BUSQUEDAS = timedelta(hours=2, minutes=40)  # "cada 3 horas", con margen por si GitHub se atrasa
 HORA_RESUMEN_DIARIO = 20  # el primer aviso desde las 20 hs (de Argentina) incluye el resumen del día
 DIA_RESUMEN_SEMANAL = 6   # domingo (lunes = 0)
 DIAS_A_GUARDAR = 30
@@ -42,6 +44,7 @@ class Estadisticas:
         # Mercado: por semana, cuántas ofertas de tu nivel se vieron y cuántas pedían cada tecnología
         self.semanas: dict[str, dict] = datos.get("semanas", {})
         self.ultimo_semanal: str = datos.get("ultimo_semanal", "")
+        self.ultima_busqueda: str = datos.get("ultima_busqueda", "")
 
     def dia(self, fecha: date) -> Dia:
         return self.dias.setdefault(fecha.isoformat(), Dia())
@@ -54,6 +57,20 @@ class Estadisticas:
         d.de_mail += de_mail
         d.errores += errores
         return d
+
+    def toca_buscar(self, ahora: datetime, forzar: bool = False) -> bool:
+        """
+        El radar se despierta cada hora (GitHub saltea corridas programadas cuando está cargado,
+        así que pedir más seguido asegura el ritmo), pero busca ofertas solo cada ~3 horas y de día.
+        """
+        if forzar:
+            return True
+        if not HORA_DESDE <= ahora.hour < HORA_HASTA:
+            return False
+        return not self.ultima_busqueda or ahora - datetime.fromisoformat(self.ultima_busqueda) >= ENTRE_BUSQUEDAS
+
+    def marcar_busqueda(self, ahora: datetime) -> None:
+        self.ultima_busqueda = ahora.isoformat(timespec="minutes")
 
     def toca_resumen_diario(self, ahora: datetime) -> bool:
         """True en la primera corrida desde las 20 hs de cada día (GitHub a veces se atrasa: no exigimos hora exacta)."""
@@ -92,6 +109,7 @@ class Estadisticas:
         datos = {
             "ultimo_resumen": self.ultimo_resumen,
             "ultimo_semanal": self.ultimo_semanal,
+            "ultima_busqueda": self.ultima_busqueda,
             "dias": {f: asdict(d) for f, d in sorted(self.dias.items()) if f >= limite},
             "semanas": semanas,
         }

@@ -197,3 +197,45 @@ def test_resumen_diario_llega_una_sola_vez_aunque_no_haya_nada(monkeypatch, caps
     assert "Revisé 1 oferta nueva en 2 pasadas" in diario            # acumula las corridas del día
     assert "1 encajó con vos" in diario
     assert _correr(monkeypatch, capsys, tmp_path, [oferta], hora=23) == []   # no se repite el mismo día
+
+
+
+def test_cada_hora_lee_botones_pero_busca_cada_3_horas(monkeypatch, capsys, tmp_path):
+    llamadas = []
+
+    def fuente():
+        llamadas.append(1)
+        return []
+
+    oferta = getonboard.convertir(ITEM_GETONBOARD)
+    _correr(monkeypatch, capsys, tmp_path, [oferta], hora=10)          # 10:30: busca
+    monkeypatch.setattr(radar, "FUENTES", {"Get on Board": fuente})
+    for hora in (11, 12):                                               # 11:30 y 12:30: solo botones
+        monkeypatch.setattr(radar, "_ahora", lambda h=hora: datetime(2026, 11, 14, h, 30, tzinfo=radar.ZONA))
+        assert radar.main() == 0
+    assert llamadas == []
+    monkeypatch.setattr(radar, "_ahora", lambda: datetime(2026, 11, 14, 13, 30, tzinfo=radar.ZONA))
+    radar.main()                                                        # 13:30: pasaron 3 horas, busca
+    assert llamadas == [1]
+
+
+def test_de_madrugada_no_busca_pero_a_mano_si(monkeypatch, capsys, tmp_path):
+    llamadas = []
+    _correr(monkeypatch, capsys, tmp_path, [], hora=10)
+    monkeypatch.setattr(radar, "FUENTES", {"Get on Board": lambda: llamadas.append(1) or []})
+    monkeypatch.setattr(radar, "_ahora", lambda: datetime(2026, 11, 15, 3, 30, tzinfo=radar.ZONA))
+    radar.main()
+    assert llamadas == []                       # 3:30 de la mañana: no busca
+    monkeypatch.setenv("FORZAR", "1")           # corrido a mano desde GitHub: busca siempre
+    radar.main()
+    assert llamadas == [1]
+
+
+def test_postulaciones_no_se_reescriben_si_no_cambiaron(tmp_path):
+    from radar_empleo.postulaciones import Postulaciones
+    ruta = tmp_path / "p.enc"
+    p = Postulaciones(ruta, "t")
+    p.guardar(date(2026, 11, 14))
+    antes = ruta.read_bytes()
+    Postulaciones(ruta, "t").guardar(date(2026, 11, 14))   # sin cambios: no toca el archivo (no hay commit)
+    assert ruta.read_bytes() == antes

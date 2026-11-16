@@ -58,6 +58,8 @@ class Postulaciones:
         self._fernet = Fernet(base64.urlsafe_b64encode(hashlib.sha256(f"radar-postulaciones:{secreto}".encode()).digest()))
         self.datos = {"offset": 0, "ofertas": {}, "estados": {}}
         self.ilegible = False
+        # El cifrado da un resultado distinto cada vez: si guardáramos siempre, habría un commit por hora sin cambios
+        self.cambio = not self.ruta.exists()
         if self.ruta.exists():
             try:
                 self.datos = json.loads(self._fernet.decrypt(self.ruta.read_bytes()))
@@ -68,6 +70,8 @@ class Postulaciones:
     # ---------- Guardar ----------
 
     def guardar(self, hoy: date) -> None:
+        if not (self.cambio or self.ilegible):
+            return
         limite = (hoy - timedelta(days=DIAS_A_GUARDAR)).isoformat()
         estados = self.datos["estados"]
         # Se olvidan las ofertas viejas que nunca tocaste; las que tienen estado se conservan
@@ -79,6 +83,7 @@ class Postulaciones:
 
     def registrar_enviada(self, oferta: Oferta, hoy: date) -> str:
         clave = clave_de(oferta.id)
+        self.cambio = True
         self.datos["ofertas"].setdefault(clave, {
             "titulo": oferta.titulo, "empresa": oferta.empresa, "url": oferta.url,
             "fuente": oferta.fuente.replace(" (alerta)", ""), "enviada": hoy.isoformat(),
@@ -104,6 +109,8 @@ class Postulaciones:
 
     def procesar(self, actualizaciones: list[dict], chat_id: str, hoy: date) -> list[Accion]:
         acciones: list[Accion] = []
+        if actualizaciones:
+            self.cambio = True
         for act in actualizaciones:
             self.datos["offset"] = max(self.datos["offset"], act["update_id"] + 1)
             if "callback_query" in act:
@@ -164,6 +171,7 @@ class Postulaciones:
 
     def marcar_preguntado(self, clave: str) -> None:
         self.datos["estados"][clave]["preguntado"] = True
+        self.cambio = True
 
     @staticmethod
     def teclado_seguimiento(clave: str) -> list:

@@ -1,6 +1,6 @@
 # 📡 Radar de empleo
 
-Bot que busca ofertas de trabajo cada 3 horas, **descarta las sospechosas**, calcula **qué tanto encajan con mi perfil** y me avisa por **Telegram** con sugerencias para ajustar el CV a cada oferta.
+Bot que busca ofertas de trabajo cada ~3 horas, **descarta las sospechosas**, calcula **qué tanto encajan con mi perfil** y me avisa por **Telegram** con sugerencias para ajustar el CV a cada oferta.
 
 No se postula solo: **la decisión de mandar el CV siempre es mía.** Postularse en automático a cientos de avisos es mala idea: los reclutadores lo notan y la mayoría de los portales lo prohíbe.
 
@@ -81,7 +81,7 @@ En el repo: *Settings → Secrets and variables → Actions → New repository s
 
 **3. Probarlo**
 
-*Actions → Radar de empleo → Run workflow*. En un minuto te llega el primer aviso. Después corre solo cada 3 horas, de 8:17 a 23:17 (hora de Argentina). Si no hay nada nuevo, no te escribe, salvo **una vez por día (desde las 20 hs)**, cuando manda un resumen corto para confirmar que sigue activo.
+*Actions → Radar de empleo → Run workflow*. En un minuto te llega el primer aviso. Después se despierta solo **cada hora**: en cada pasada lee los botones que tocaste en Telegram, y cada ~3 horas (entre las 8 y las 24 de Argentina) busca ofertas. GitHub saltea a veces las tareas programadas cuando está cargado; despertarse cada hora asegura el ritmo. Si no hay nada nuevo, no te escribe, salvo **una vez por día (desde las 20 hs)**, cuando manda un resumen corto para confirmar que sigue activo.
 
 **4. (Opcional) Alertas de LinkedIn, Computrabajo, Bumeran, ZonaJobs e Indeed**
 

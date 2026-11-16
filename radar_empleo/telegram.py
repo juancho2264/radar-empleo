@@ -171,7 +171,8 @@ def mensaje_semanal(mercado: dict, habilidades: set[str], revisadas: int, postul
     total = mercado.get("ofertas", 0)
     lineas = ["📊 <b>Tu semana en el mercado</b>",
               f"Revisé {plural(revisadas, 'oferta nueva', 'ofertas nuevas')}; "
-              f"{plural(total, 'era', 'eran')} de tu nivel."]
+              f"{plural(total, 'era', 'eran')} de tu nivel y mencionaban tecnologías "
+              "(en las alertas de LinkedIn, según el título)."]
     if total:
         ranking = sorted(mercado["tecnologias"].items(), key=lambda par: (-par[1], par[0]))
         falta = [(t, c) for t, c in ranking if t not in habilidades][:top]

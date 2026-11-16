@@ -1,11 +1,12 @@
-# Corre el radar cada 3 horas y te avisa por Telegram.
+# Corre el radar cada hora (busca ofertas cada ~3) y te avisa por Telegram.
 name: Radar de empleo
 
 on:
   schedule:
-    # Cada 3 horas entre las 8 y las 23 de Argentina (el horario de GitHub es UTC = Argentina + 3):
-    # 8:17, 11:17, 14:17, 17:17, 20:17 y 23:17
-    - cron: "17 2,11,14,17,20,23 * * *"
+    # Cada hora. GitHub saltea corridas programadas cuando está cargado, así que pedir más seguido
+    # asegura el ritmo. El radar decide: cada hora lee los botones de Telegram, y cada ~3 horas
+    # (entre las 8 y las 24 de Argentina) busca ofertas.
+    - cron: "37 * * * *"
   workflow_dispatch:   # botón "Run workflow" para correrlo a mano
     inputs:
       modo:
@@ -47,6 +48,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}                 # opcional: alertas por mail
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          FORZAR: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}   # a mano: buscar siempre
         run: python -m radar_empleo
 
       - name: Guardar ofertas ya revisadas

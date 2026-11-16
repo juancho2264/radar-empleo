@@ -102,6 +102,15 @@ def main() -> int:
         except Exception as error:  # noqa: BLE001
             errores.append(f"No pude leer los botones de Telegram: {type(error).__name__}. Reintento en el próximo aviso.")
 
+    # Cada hora se leen los botones; las ofertas se buscan cada ~3 horas (o siempre, si lo corrés a mano)
+    forzar = args.simular or os.environ.get("FORZAR") == "1"
+    if not estadisticas.toca_buscar(ahora, forzar):
+        if not args.simular:
+            postulaciones.guardar(hoy)
+        print(f"Pasada liviana: solo botones de Telegram (última búsqueda: {estadisticas.ultima_busqueda or 'nunca'})")
+        return 0
+    estadisticas.marcar_busqueda(ahora)
+
     # 2. Buscar y evaluar ofertas nuevas
     ofertas, errores_fuentes = _buscar_todas()
     errores += errores_fuentes
@@ -110,10 +119,10 @@ def main() -> int:
     utiles = sorted((ev for ev in evaluaciones if ev.sirve), key=lambda ev: -ev.porcentaje)
     descartes = Counter(_categoria(ev.descartada_por) for ev in evaluaciones if not ev.sirve)
 
-    # Para el reporte semanal: qué piden las ofertas de TU nivel (aunque no te sirvan por ubicación o idioma)
+    # Para el reporte semanal: qué piden las ofertas de TU nivel (aunque no te sirvan por ubicación o idioma).
+    # Incluye las alertas de LinkedIn: de esas solo sabemos el título, pero es la fuente que más trae.
     estadisticas.registrar_mercado(hoy, [ev.tiene + ev.falta for ev in evaluaciones
-                                         if ev.nivel in perfil.niveles_aceptados and not ev.oferta.solo_titulo
-                                         and (ev.tiene or ev.falta)])
+                                         if ev.nivel in perfil.niveles_aceptados and (ev.tiene or ev.falta)])
 
     # 3. Mandar ofertas. Completas: una por mensaje. De alertas por mail (solo título): todas juntas.
     completas = [ev for ev in utiles if not ev.oferta.solo_titulo]
