@@ -98,6 +98,14 @@ def _fuera_de_zona(oferta: Oferta, perfil: Perfil) -> str:
     return f"Solo para candidatos de {oferta.ubicacion}" if oferta.remoto else f"Presencial en {oferta.ubicacion}"
 
 
+PALABRAS_DE_TITULO_EN_INGLES = {"engineer", "developer", "software", "with", "and", "for", "remote", "lead", "intern"}
+
+
+def titulo_en_ingles(oferta: Oferta) -> bool:
+    """Para alertas (solo título): no sabemos el idioma del aviso, pero un título en inglés es una pista."""
+    return any(p in PALABRAS_DE_TITULO_EN_INGLES for p in re.findall(r"[a-z]+", oferta.titulo.lower()))
+
+
 def esta_en_ingles(oferta: Oferta) -> bool:
     palabras = re.findall(r"[a-z]+", oferta.descripcion.lower())
     if len(palabras) < 30:

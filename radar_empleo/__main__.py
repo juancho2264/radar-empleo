@@ -20,7 +20,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from . import telegram
-from .evaluador import evaluar
+from .evaluador import evaluar, titulo_en_ingles
 from .estadisticas import Estadisticas
 from .estado import Vistos
 from .fuentes import alertas_mail, getonboard, remotive
@@ -126,7 +126,8 @@ def main() -> int:
 
     # 3. Mandar ofertas. Completas: una por mensaje. De alertas por mail (solo título): todas juntas.
     completas = [ev for ev in utiles if not ev.oferta.solo_titulo]
-    de_alertas = [ev for ev in utiles if ev.oferta.solo_titulo]
+    # Alertas: primero las de título en castellano (las de título en inglés suelen pedir inglés)
+    de_alertas = sorted((ev for ev in utiles if ev.oferta.solo_titulo), key=lambda ev: titulo_en_ingles(ev.oferta))
     a_enviar = completas[: perfil.maximo_por_aviso]
     alertas_a_enviar = de_alertas[:MAXIMO_ALERTAS_POR_AVISO]
     no_mostradas = {ev.oferta.id for ev in completas[perfil.maximo_por_aviso:] + de_alertas[MAXIMO_ALERTAS_POR_AVISO:]}

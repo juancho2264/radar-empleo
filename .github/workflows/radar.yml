@@ -10,9 +10,9 @@ on:
   workflow_dispatch:   # botón "Run workflow" para correrlo a mano
     inputs:
       modo:
-        description: "normal = avisa por Telegram · muestra = imprime cómo llegan los datos de cada fuente"
+        description: "normal = busca ya y avisa · auto = como la tarea programada (lo usa el disparador externo) · muestra = diagnóstico"
         type: choice
-        options: [normal, muestra]
+        options: [normal, auto, muestra]
         default: normal
 
 permissions:
@@ -48,7 +48,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}                 # opcional: alertas por mail
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          FORZAR: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}   # a mano: buscar siempre
+          FORZAR: ${{ github.event.inputs.modo == 'normal' && '1' || '0' }}   # a mano (normal): buscar siempre
         run: python -m radar_empleo
 
       - name: Guardar ofertas ya revisadas

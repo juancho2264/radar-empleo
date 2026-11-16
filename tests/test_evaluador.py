@@ -113,6 +113,7 @@ def test_titulo_con_tecnologia_que_no_tenes_baja_el_puntaje(perfil):
     ("Desarrollador Java", "Entre 1 y 2 años de experiencia.", "junior"),
     ("Pasante de desarrollo", "Java y SQL.", "trainee"),
     ("Desarrollador Java Semi Senior", "", "semi senior"),
+    ("Middle Java Engineer", "", "semi senior"),
 ])
 def test_detecta_nivel(titulo, descripcion, esperado):
     assert detectar_nivel(oferta(titulo, descripcion)) == esperado

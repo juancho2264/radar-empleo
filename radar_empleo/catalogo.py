@@ -80,7 +80,7 @@ TECNOLOGIAS: dict[str, list[str]] = {
 NIVELES: dict[str, list[str]] = {
     "trainee": ["trainee", "pasante", "pasantia", "practicante", "intern", "internship"],
     "junior": ["junior", "jr", "jr.", "sin experiencia", "primer empleo", "entry level", "entry-level"],
-    "semi senior": ["semi senior", "semisenior", "semi-senior", "ssr", "ssr.", "mid level", "mid-level"],
+    "semi senior": ["semi senior", "semisenior", "semi-senior", "ssr", "ssr.", "mid level", "mid-level", "middle", "mid"],
     # Ojo: no poner "lead" ni "staff" solos: aparecen en "leading company" o "staff augmentation"
     "senior": ["senior", "sr", "sr.", "tech lead", "team lead", "lead developer", "lider tecnico", "arquitecto"],
 }

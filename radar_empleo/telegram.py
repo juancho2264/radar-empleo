@@ -14,6 +14,7 @@ import urllib.request
 
 from .estadisticas import Dia
 from .modelos import Evaluacion
+from .evaluador import titulo_en_ingles
 
 LIMITE_CARACTERES = 4000  # Telegram corta en 4096
 
@@ -127,7 +128,8 @@ def mensaje_alertas(evaluaciones: list[Evaluacion]) -> str:
               "Usá los botones con el número de cada una.</i>", ""]
     for n, ev in enumerate(evaluaciones, 1):  # numeradas: los botones ✅ 1 / 🚫 1 se refieren a estos números
         o = ev.oferta
-        lineas.append(f'🔵 <b>{n}.</b> {ev.porcentaje}% · {link(o.url, o.titulo)} · {e(o.fuente.replace(" (alerta)", ""))}')
+        ingles = " · 🌐 <i>título en inglés: puede pedir inglés</i>" if titulo_en_ingles(o) else ""
+        lineas.append(f'🔵 <b>{n}.</b> {ev.porcentaje}% · {link(o.url, o.titulo)} · {e(o.fuente.replace(" (alerta)", ""))}{ingles}')
         if ev.tiene:
             lineas.append(f"    ✅ {e(', '.join(ev.tiene))}" + (f" · ❌ {e(', '.join(ev.falta))}" if ev.falta else ""))
     return "\n".join(lineas)
