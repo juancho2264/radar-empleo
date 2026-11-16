@@ -260,6 +260,14 @@ def _muestra() -> int:
     print(f"Te sirven: {sum(ev.sirve for ev in evaluaciones)}")
     print(f"Descartes: {dict(Counter(_categoria(ev.descartada_por) for ev in evaluaciones if not ev.sirve))}")
     print(f"Niveles detectados: {dict(Counter(ev.nivel for ev in evaluaciones))}")
+
+    # Qué tecnologías piden (en % de ofertas): todas y solo las de nivel trainee/junior
+    print("===== Tecnologías más pedidas =====")
+    completas = [ev for ev in evaluaciones if not ev.oferta.solo_titulo and (ev.tiene or ev.falta)]
+    for nombre, grupo in (("todas", completas), ("trainee/junior", [ev for ev in completas if ev.nivel in ("trainee", "junior")])):
+        conteo = Counter(t for ev in grupo for t in set(ev.tiene + ev.falta))
+        top = ", ".join(f"{t} {round(100 * c / len(grupo))}%" for t, c in conteo.most_common(20)) if grupo else "-"
+        print(f"[{nombre}] {len(grupo)} ofertas: {top}")
     return 0
 
 
