@@ -1,7 +1,7 @@
 {
- "ultimo_resumen": "2026-11-18",
+ "ultimo_resumen": "2026-11-19",
  "ultimo_semanal": "2026-W46",
- "ultima_busqueda": "2026-11-19T15:37-03:00",
+ "ultima_busqueda": "2026-11-19T22:26-03:00",
  "dias": {
   "2026-11-14": {
    "corridas": 2,
@@ -39,8 +39,8 @@
    "errores": 1
   },
   "2026-11-19": {
-   "corridas": 1,
-   "revisadas": 4,
+   "corridas": 2,
+   "revisadas": 8,
    "utiles": 0,
    "de_mail": 1,
    "errores": 0
