@@ -1,7 +1,7 @@
 {
  "ultimo_resumen": "2026-11-24",
  "ultimo_semanal": "2026-W47",
- "ultima_busqueda": "2026-11-25T10:26-03:00",
+ "ultima_busqueda": "2026-11-25T19:42-03:00",
  "dias": {
   "2026-11-14": {
    "corridas": 2,
@@ -81,8 +81,8 @@
    "errores": 0
   },
   "2026-11-25": {
-   "corridas": 1,
-   "revisadas": 0,
+   "corridas": 2,
+   "revisadas": 9,
    "utiles": 0,
    "de_mail": 0,
    "errores": 0
@@ -98,7 +98,7 @@
    "tecnologias": {}
   },
   "2026-W48": {
-   "ofertas": 2,
+   "ofertas": 3,
    "tecnologias": {
     "git": 2,
     "css": 1,
@@ -111,7 +111,7 @@
     "google cloud": 2,
     "postgresql": 2,
     "html": 1,
-    "sql": 2,
+    "sql": 3,
     "javascript": 2,
     "api rest": 1,
     "vue": 1,
@@ -119,7 +119,9 @@
     "github": 1,
     "next.js": 1,
     "aws": 1,
-    "testing": 1
+    "testing": 1,
+    "scrum": 1,
+    "jira": 1
    }
   }
  }
